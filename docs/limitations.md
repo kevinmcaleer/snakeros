@@ -6,14 +6,18 @@ title: Limitations
 
 SnakeROS trades throughput for reach. Here is exactly what you give up.
 
+Several items below are planned for v2 —
+[epic #26](https://github.com/kevinmcaleer/snakeros/issues/26) — and are marked
+**(v2)**. Those without a marker are deliberate long-term non-goals.
+
 ## Not implemented, by design
 
-**Actions.** No `rclpy.action` equivalent. micro-ROS does not have them
+**Actions** *(v2: [#31](https://github.com/kevinmcaleer/snakeros/issues/31))*. No `rclpy.action` equivalent. micro-ROS does not have them
 natively either. Long-running goals with feedback and cancellation are a lot
 of machinery for a microcontroller; a service plus a status topic covers most
 real cases.
 
-**TF / `tf2`.** No transform broadcaster or listener. Publish
+**TF / `tf2`** *(v2, broadcast only: [#32](https://github.com/kevinmcaleer/snakeros/issues/32))*. No transform broadcaster or listener. Publish
 `geometry_msgs/TransformStamped` on `/tf` yourself if you need it — the
 message type ships — but the transform *tree*, buffering and interpolation
 belong on the host.
@@ -28,7 +32,7 @@ machinery buys nothing on a microcontroller and costs RAM.
 good (p95 within ~1 ms of a 20 ms period on the host) but there is no bound.
 Do not put a motor commutation loop in Python.
 
-**Parameter persistence to flash.** Parameters are runtime-only; they reset on
+**Parameter persistence to flash** *(v2: [#34](https://github.com/kevinmcaleer/snakeros/issues/34))*. Parameters are runtime-only; they reset on
 power cycle. This is the one genuinely board-specific piece and is a known gap
 rather than a decision.
 
@@ -46,7 +50,8 @@ See [Memory and performance](memory.md) for measured numbers.
 ## QoS
 
 Only reliability and history depth are exposed through the entity XML. No
-deadline, liveliness, lifespan or durability.
+deadline, liveliness, lifespan or durability
+*(v2: [#29](https://github.com/kevinmcaleer/snakeros/issues/29))*.
 
 Note the distinction that catches people: XRCE stream reliability
 (board↔Agent) is **independent** of DDS QoS reliability (Agent↔ROS 2).

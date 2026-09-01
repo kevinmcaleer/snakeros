@@ -128,6 +128,23 @@ and real-time guarantees. Built for `cmd_vel`, `odom`, IMU and joint states at
 10–50 Hz — not camera frames or lidar scans. See
 [limitations](docs/limitations.md).
 
+### Planned for v2
+
+[**Epic #26**](https://github.com/kevinmcaleer/snakeros/issues/26) — 20 issues
+across six milestones:
+
+| | |
+|---|---|
+| **Correctness gaps** | ROS time sync (timestamps are currently meaningless without an RTC), `uint8[]` as bytes, full QoS, `/rosout` logging |
+| **Missing ROS 2 concepts** | actions, TF broadcasting, lifecycle nodes |
+| **Deployment** | persistent parameters, Agent discovery, power management, transport failover |
+| **Performance** | viper CDR hot paths, generated serialisers, zero-copy decode |
+| **Documentation** | a [Diátaxis](https://diataxis.fr/) restructure — tutorials, how-to, reference, explanation |
+| **Ecosystem** | Zenoh transport, hardware CI |
+
+Still out of scope in v2: security (SROS2/DDS-Security), camera and lidar at
+rate, hard real-time, and a full tf2 tree.
+
 ## Licence
 
 Apache 2.0, matching the wider ROS ecosystem.
