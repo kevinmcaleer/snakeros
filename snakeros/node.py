@@ -264,6 +264,34 @@ class Node:
         self._clients.append(cli)
         return cli
 
+    # -- parameters --------------------------------------------------------
+
+    def _params_server(self):
+        if self._params is None:
+            from .parameters import ParameterServer
+
+            self._params = ParameterServer(self)
+        return self._params
+
+    def declare_parameter(self, name, default, description="", minimum=None,
+                          maximum=None, read_only=False, callback=None):
+        """Declare a parameter, tunable at runtime with ``ros2 param set``.
+
+        The first call stands up the five standard parameter services, so a
+        node that declares nothing pays nothing.
+        """
+        return self._params_server().declare(
+            name, default, description, minimum, maximum, read_only, callback
+        )
+
+    def get_parameter(self, name, default=None):
+        if self._params is None:
+            return default
+        return self._params.get(name, default)
+
+    def set_parameter(self, name, value):
+        return self._params_server().set(name, value)
+
     def create_timer(self, period_s, callback):
         t = Timer(period_s, callback)
         self.timers.append(t)
