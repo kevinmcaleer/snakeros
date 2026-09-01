@@ -28,6 +28,11 @@ data: hello from a Pico
 > endorsed by [micro-ROS](https://micro.ros.org/), eProsima or Open Robotics.
 > It is *compatible with* the micro-ROS Agent, which is a different claim.
 
+**Common questions:** [Why speak XRCE and not DDS
+directly?](architecture.md#why-not-dds-directly) ·
+[Where does the Agent run?](architecture.md#where-the-agent-runs) ·
+[Are `.mpy` files board-specific?](packaging.md#are-mpy-files-board-dependent)
+
 ## Ten minutes from nothing to a published message
 
 ### 1. Run the Agent
@@ -96,7 +101,7 @@ layer is broken.
 
 | Page | |
 |---|---|
-| [Architecture](architecture.md) | How it works, and the idea that makes it possible |
+| [Architecture](architecture.md) | How it works, the idea that makes it possible, and [why not DDS directly?](architecture.md#why-not-dds-directly) |
 | [API reference](api.md) | Every public class and method |
 | [Messages](messages.md) | What ships, and generating your own from `.msg` |
 | [Transports](transports.md) | UDP vs serial, and the REPL conflict |

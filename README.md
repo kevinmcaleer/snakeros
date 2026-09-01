@@ -109,6 +109,7 @@ $ make rig-up && make test
 
 [Getting started](docs/index.md) ·
 [Architecture](docs/architecture.md) ·
+[Why not DDS?](docs/architecture.md#why-not-dds-directly) ·
 [API](docs/api.md) ·
 [Messages](docs/messages.md) ·
 [Transports](docs/transports.md) ·
