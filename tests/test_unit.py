@@ -163,6 +163,27 @@ try:
 except TypeError:
     pass
 
+# -- error paths ---------------------------------------------------------
+# The error path itself must work on MicroPython. EntityError once used
+# ``SnakeROSError.__init__(self, ...)``, which raises AttributeError on
+# MicroPython -- replacing "the Agent rejected this entity" with something
+# baffling at exactly the moment you need the real message.
+
+from snakeros.errors import EntityError, SnakeROSError  # noqa: E402
+
+try:
+    raise EntityError("rejected: " + C.status_name(0x82), 0x82)
+except EntityError as e:
+    eq(str(e), "rejected: ERR_ALREADY_EXISTS", "EntityError carries its message")
+    eq(e.status, 0x82, "EntityError carries its status")
+    check(isinstance(e, SnakeROSError), "EntityError is a SnakeROSError")
+except Exception as e:
+    _fails.append("EntityError construction raised {}: {}".format(type(e).__name__, e))
+
+eq(C.status_name(0x00), "OK", "status_name OK")
+eq(C.status_name(0x84), "ERR_UNKNOWN_REFERENCE", "status_name error")
+check("UNKNOWN" in C.status_name(0x77), "status_name handles unknown codes")
+
 # -- report --------------------------------------------------------------
 
 if _fails:

@@ -34,7 +34,12 @@ class EntityError(SnakeROSError):
     """The Agent rejected an entity creation or deletion."""
 
     def __init__(self, message, status=None):
-        SnakeROSError.__init__(self, message)
+        # MicroPython does not support ``BaseClass.__init__(self, ...)`` on a
+        # subclass of a built-in exception -- it raises AttributeError, which
+        # replaces a clear "the Agent rejected this entity" message with a
+        # baffling one at exactly the moment you need the real error. Use
+        # super(), which works on both.
+        super().__init__(message)
         self.status = status
 
 
