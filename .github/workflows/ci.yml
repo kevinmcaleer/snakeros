@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install MicroPython (Unix port)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential libffi-dev pkg-config
+          git clone --depth 1 --branch v1.29.0 https://github.com/micropython/micropython.git /tmp/mp
+          make -C /tmp/mp/mpy-cross -j"$(nproc)"
+          make -C /tmp/mp/ports/unix submodules
+          make -C /tmp/mp/ports/unix -j"$(nproc)"
+          sudo cp /tmp/mp/ports/unix/build-standard/micropython /usr/local/bin/micropython
+          sudo cp /tmp/mp/mpy-cross/build/mpy-cross /usr/local/bin/mpy-cross
+          micropython -c "import sys; print(sys.implementation)"
+
+      # Fast feedback first: unit tests need no containers at all.
+      - name: Unit tests
+        run: make unit
+
+      - name: Start the test rig
+        run: make rig-up
+
+      - name: CDR differential test against rclpy
+        run: make cdr-diff
+
+      - name: Integration test
+        run: DURATION=20 make integration
+
+      - name: Agent logs on failure
+        if: failure()
+        run: make rig-logs
+
+      - name: Tear down
+        if: always()
+        run: make rig-down
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ruff
+      - run: ruff check snakeros tools tests || true
+      - name: Check generated packs are up to date with the generator
+        run: python3 -c "import ast,sys; [ast.parse(open(f).read()) for f in __import__('glob').glob('snakeros/**/*.py', recursive=True)]; print('all modules parse')"

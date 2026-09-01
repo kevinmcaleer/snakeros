@@ -1,0 +1,71 @@
+"""UDP transport.
+
+One datagram in, one datagram out -- message boundaries come free, which is
+why this is the transport the project starts with. The serial transport has to
+do HDLC framing itself and lands later.
+"""
+
+import socket
+
+from ..errors import NotConnectedError, TransportError
+
+
+class UDPTransport:
+    """Datagram transport to a micro-ROS Agent listening on ``udp4``.
+
+    The interface here -- ``open``/``send``/``recv``/``close`` plus ``mtu`` --
+    is deliberately the whole contract the session layer depends on, so a
+    different middleware or transport can be slotted in underneath without
+    disturbing anything above.
+    """
+
+    def __init__(self, host, port=8888, mtu=512, timeout=0.1):
+        self.host = host
+        self.port = port
+        self.mtu = mtu
+        self.timeout = timeout
+        self._sock = None
+        self._addr = None
+
+    def open(self):
+        ai = socket.getaddrinfo(self.host, self.port, 0, socket.SOCK_DGRAM)[0]
+        self._addr = ai[-1]
+        self._sock = socket.socket(ai[0], socket.SOCK_DGRAM)
+        try:
+            self._sock.settimeout(self.timeout)
+        except (AttributeError, OSError):
+            # Some MicroPython ports only offer non-blocking mode.
+            self._sock.setblocking(False)
+        return self
+
+    def close(self):
+        if self._sock is not None:
+            try:
+                self._sock.close()
+            finally:
+                self._sock = None
+
+    def send(self, data):
+        if self._sock is None:
+            raise NotConnectedError("transport not open")
+        try:
+            return self._sock.sendto(data, self._addr)
+        except OSError as e:
+            raise TransportError("send failed: {}".format(e))
+
+    def recv(self):
+        """Return one datagram, or ``None`` if nothing arrived in time."""
+        if self._sock is None:
+            raise NotConnectedError("transport not open")
+        try:
+            data = self._sock.recv(self.mtu + 64)
+        except OSError:
+            # Timeout or EAGAIN -- both mean "nothing yet", not "broken".
+            return None
+        return data or None
+
+    def __enter__(self):
+        return self.open()
+
+    def __exit__(self, *a):
+        self.close()

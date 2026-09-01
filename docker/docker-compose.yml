@@ -1,0 +1,26 @@
+# Test rig for SnakeROS.
+#
+#   docker compose -f docker/docker-compose.yml up -d
+#
+# Brings up a stock micro-ROS Agent on UDP 8888 (published to the host so the
+# MicroPython Unix port can reach it) and a ROS 2 container for assertions.
+services:
+  agent:
+    image: microros/micro-ros-agent:jazzy
+    container_name: snakeros_agent
+    command: udp4 --port 8888 -v4
+    ports:
+      - "8888:8888/udp"
+    networks: [snakeros]
+
+  ros:
+    image: ros:jazzy-ros-base
+    container_name: snakeros_ros
+    command: sleep infinity
+    networks: [snakeros]
+    volumes:
+      - ../:/work:ro
+
+networks:
+  snakeros:
+    driver: bridge
