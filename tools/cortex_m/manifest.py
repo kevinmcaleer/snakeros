@@ -1,0 +1,17 @@
+freeze("/tmp/frz", (
+    "snakeros/__init__.py",
+    "snakeros/errors.py",
+    "snakeros/cdr/__init__.py",
+    "snakeros/cdr/writer.py",
+    "snakeros/cdr/reader.py",
+    "snakeros/xrce/__init__.py",
+    "snakeros/xrce/const.py",
+    "snakeros/xrce/entities.py",
+    "snakeros/msg/__init__.py",
+    "snakeros/msg/_base.py",
+    "snakeros/msg/builtin_interfaces.py",
+    "snakeros/msg/std_msgs.py",
+    "snakeros/msg/geometry_msgs.py",
+    "snakeros/msg/sensor_msgs.py",
+    "snakeros/msg/nav_msgs.py",
+))
