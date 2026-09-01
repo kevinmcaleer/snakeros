@@ -58,7 +58,11 @@ class Publisher:
         self.topic = topic
         self._dw = datawriter
         self.reliable = reliable
-        self._stream = C.STREAM_BEST_EFFORT
+        # Reliability is per-publisher so you pay the retransmit-window RAM
+        # only where you need it: an e-stop, yes; a 50 Hz IMU feed, no.
+        self._stream = (
+            node._session.reliable_stream() if reliable else C.STREAM_BEST_EFFORT
+        )
 
     def publish(self, msg):
         """Serialise and publish one message."""
@@ -244,6 +248,22 @@ class Node:
         self.subscriptions.append(s)
         return s
 
+    def create_service(self, srv_type, service_name, handler):
+        """Host a service on the board."""
+        from .services import Service
+
+        svc = Service(self, srv_type, service_name, handler)
+        self._services.append(svc)
+        return svc
+
+    def create_client(self, srv_type, service_name):
+        """Call a service hosted elsewhere in the graph."""
+        from .services import ServiceClient
+
+        cli = ServiceClient(self, srv_type, service_name)
+        self._clients.append(cli)
+        return cli
+
     def create_timer(self, period_s, callback):
         t = Timer(period_s, callback)
         self.timers.append(t)
@@ -259,6 +279,8 @@ class Node:
             t.check(now)
         for s in self.subscriptions:
             s.maintain()
+        for svc in self._services:
+            svc.maintain()
 
     def spin(self, timeout_ms=10):
         """Block forever, servicing callbacks. Ctrl-C exits cleanly."""

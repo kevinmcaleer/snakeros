@@ -53,3 +53,27 @@ class Trigger_Response(Msg):
     _kind_ = "srv"
     _name_ = "Trigger_Response"
     _fields_ = ()
+
+
+class Empty:
+    """Service type: pairs the request and response messages."""
+    _package_ = "std_srvs"
+    _name_ = "Empty"
+    Request = Empty_Request
+    Response = Empty_Response
+
+
+class SetBool:
+    """Service type: pairs the request and response messages."""
+    _package_ = "std_srvs"
+    _name_ = "SetBool"
+    Request = SetBool_Request
+    Response = SetBool_Response
+
+
+class Trigger:
+    """Service type: pairs the request and response messages."""
+    _package_ = "std_srvs"
+    _name_ = "Trigger"
+    Request = Trigger_Request
+    Response = Trigger_Response

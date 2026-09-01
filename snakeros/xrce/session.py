@@ -17,6 +17,14 @@ import time
 from ..cdr import CDRWriter, CDRReader
 from ..errors import EntityError, HandshakeError, SessionError, SessionTimeout
 from . import const as C
+from .reliable import (
+    InputReliableStream,
+    OutputReliableStream,
+    pack_acknack,
+    pack_heartbeat,
+    unpack_acknack,
+    unpack_heartbeat,
+)
 from .entities import (
     ObjectIdAllocator,
     object_id,
@@ -27,6 +35,8 @@ from .entities import (
     subscriber_xml,
     datawriter_xml,
     datareader_xml,
+    requester_xml,
+    replier_xml,
 )
 
 _ticks_ms = getattr(time, "ticks_ms", None)
@@ -59,6 +69,11 @@ class Session:
         self._alloc = ObjectIdAllocator()
         self._data_callbacks = {}    # datareader raw id -> callable(bytes)
         self._pending_status = {}    # request_id -> status code
+        self._out_reliable = {}      # stream_id -> OutputReliableStream
+        self._in_reliable = {}       # stream_id -> InputReliableStream
+        self._frag_buf = {}          # stream_id -> bytearray of partial submessage
+        self.fragments_sent = 0
+        self.fragments_received = 0
 
     # -- framing -----------------------------------------------------------
 
@@ -110,6 +125,106 @@ class Session:
     def _send(self, w):
         self.transport.send(w.bytes())
 
+    # -- reliable streams --------------------------------------------------
+
+    def reliable_stream(self, index=0, max_buffered=8):
+        """Get (or create) an output reliable stream id.
+
+        Reliable streams are opt-in because they cost RAM: roughly
+        ``max_buffered * MTU`` for the retransmit window. See
+        :mod:`snakeros.xrce.reliable`.
+        """
+        sid = C.STREAM_RELIABLE + index
+        if sid not in self._out_reliable:
+            self._out_reliable[sid] = OutputReliableStream(
+                sid, max_buffered=max_buffered
+            )
+            self._in_reliable[sid] = InputReliableStream(sid)
+        return sid
+
+    def _is_reliable(self, stream_id):
+        return stream_id >= C.STREAM_RELIABLE
+
+    def _send_reliable(self, stream_id, w, seq):
+        stream = self._out_reliable.get(stream_id)
+        dg = w.bytes()
+        if stream is not None and not stream.add(seq, dg):
+            # Window full: flush by asking the Agent where it has got to,
+            # rather than silently growing the buffer.
+            self._send_heartbeat(stream_id, force=True)
+            self.poll(20)
+            stream.add(seq, dg)
+        self.transport.send(dg)
+
+    def _send_heartbeat(self, stream_id, force=False):
+        stream = self._out_reliable.get(stream_id)
+        if stream is None:
+            return
+        rng = stream.heartbeat_range()
+        if rng is None:
+            return
+        now = _now_ms()
+        if not force and _elapsed_ms(stream.last_heartbeat) < stream.heartbeat_ms:
+            return
+        stream.last_heartbeat = now
+        w = CDRWriter()
+        w.u8(self.session_id)
+        w.u8(0)                       # heartbeats ride stream 0
+        w.buf.extend(b"\x00\x00")
+        if self.session_id < C.SESSION_ID_WITHOUT_CLIENT_KEY:
+            w.buf.extend(self.key)
+        at = self._begin_submessage(w, C.SUBMESSAGE_HEARTBEAT)
+        w.raw(pack_heartbeat(rng[0], rng[1], stream_id))
+        self._end_submessage(w, at)
+        self.transport.send(w.bytes())
+
+    def _send_acknack(self, stream_id):
+        stream = self._in_reliable.get(stream_id)
+        if stream is None:
+            return
+        first, bitmap = stream.compute_acknack()
+        w = CDRWriter()
+        w.u8(self.session_id)
+        w.u8(0)
+        w.buf.extend(b"\x00\x00")
+        if self.session_id < C.SESSION_ID_WITHOUT_CLIENT_KEY:
+            w.buf.extend(self.key)
+        at = self._begin_submessage(w, C.SUBMESSAGE_ACKNACK)
+        w.raw(pack_acknack(first, bitmap, stream_id))
+        self._end_submessage(w, at)
+        self.transport.send(w.bytes())
+
+    # -- fragmentation -----------------------------------------------------
+
+    def _max_payload(self):
+        return self.mtu - self._header_size() - C.SUBHEADER_SIZE
+
+    def _send_fragmented(self, stream_id, submessage):
+        """Split an oversized submessage across FRAGMENT submessages.
+
+        Each fragment is its own datagram; the last carries LAST_FRAGMENT so
+        the Agent knows to reassemble and process.
+        """
+        chunk = self._max_payload()
+        total = len(submessage)
+        off = 0
+        while off < total:
+            piece = submessage[off:off + chunk]
+            off += len(piece)
+            last = off >= total
+            w = self._begin_message(stream_id)
+            at = self._begin_submessage(
+                w, C.SUBMESSAGE_FRAGMENT,
+                C.FLAG_LAST_FRAGMENT if last else 0,
+            )
+            w.raw(piece)
+            self._end_submessage(w, at)
+            self.fragments_sent += 1
+            if self._is_reliable(stream_id):
+                self._send_reliable(stream_id, w, self._out_reliable[stream_id].take_seq())
+            else:
+                self._send(w)
+
     # -- receive -----------------------------------------------------------
 
     def _parse(self, data):
@@ -140,6 +255,8 @@ class Session:
 
     def poll(self, timeout_ms=0):
         """Read and dispatch whatever has arrived. Returns submessages seen."""
+        for sid in self._out_reliable:
+            self._send_heartbeat(sid)
         deadline = _now_ms()
         seen = []
         while True:
@@ -160,6 +277,20 @@ class Session:
             if len(payload) >= 6:
                 rid = (payload[0] << 8) | payload[1]
                 self._pending_status[rid] = payload[4]
+        elif sub_id == C.SUBMESSAGE_ACKNACK:
+            parsed = unpack_acknack(payload)
+            if parsed is not None:
+                first, bitmap, sid = parsed
+                stream = self._out_reliable.get(sid)
+                if stream is not None:
+                    for dg in stream.on_acknack(first, bitmap):
+                        self.transport.send(dg)
+        elif sub_id == C.SUBMESSAGE_HEARTBEAT:
+            parsed = unpack_heartbeat(payload)
+            if parsed is not None:
+                _first, _last, sid = parsed
+                if sid in self._in_reliable:
+                    self._send_acknack(sid)
         elif sub_id == C.SUBMESSAGE_DATA:
             # BaseObjectRequest(request_id 2 + object_id 2) then the sample.
             if len(payload) >= 4:
@@ -358,6 +489,51 @@ class Session:
 
         return self._create(raw, C.OBJK_DATAREADER, rep)
 
+    def create_requester(self, participant, service_name, req_type, res_type):
+        raw = self._alloc.alloc(C.OBJK_REQUESTER)
+        xml = requester_xml(service_name, req_type, res_type)
+
+        def rep(w):
+            w.u8(C.REPRESENTATION_AS_XML_STRING)
+            w.string(xml)
+            w.raw(participant)
+
+        return self._create(raw, C.OBJK_REQUESTER, rep)
+
+    def create_replier(self, participant, service_name, req_type, res_type):
+        raw = self._alloc.alloc(C.OBJK_REPLIER)
+        xml = replier_xml(service_name, req_type, res_type)
+
+        def rep(w):
+            w.u8(C.REPRESENTATION_AS_XML_STRING)
+            w.string(xml)
+            w.raw(participant)
+
+        return self._create(raw, C.OBJK_REPLIER, rep)
+
+    def write_reply(self, replier, sample_identity, payload,
+                    stream_id=C.STREAM_RELIABLE):
+        """Reply to a service request.
+
+        The 24-byte SampleIdentity from the incoming request is echoed back
+        verbatim; it is how the Agent routes the reply to the right caller.
+        """
+        if stream_id >= C.STREAM_RELIABLE and stream_id not in self._out_reliable:
+            self.reliable_stream(stream_id - C.STREAM_RELIABLE)
+        w = self._begin_message(stream_id)
+        rid = self._next_request_id()
+        at = self._begin_submessage(w, C.SUBMESSAGE_WRITE_DATA, C.FORMAT_DATA)
+        w.raw(struct.pack(">H", rid))
+        w.raw(replier)
+        w.raw(sample_identity)
+        w.raw(payload)
+        self._end_submessage(w, at)
+        if stream_id >= C.STREAM_RELIABLE:
+            self._send_reliable(stream_id, w, self._out_seq.get(stream_id, 1) - 1)
+        else:
+            self._send(w)
+        return rid
+
     def delete(self, obj_raw, timeout_ms=1000):
         w = self._begin_message(C.STREAM_BEST_EFFORT)
         rid = self._next_request_id()
@@ -378,14 +554,44 @@ class Session:
         CDR buffer here, so we append it as raw octets and never let the
         datagram's alignment leak into it.
         """
-        w = self._begin_message(stream_id)
         rid = self._next_request_id()
+
+        # Oversized samples go out as FRAGMENT submessages. Build the whole
+        # WRITE_DATA submessage first so it can be split without having to
+        # know the fragment boundaries in advance.
+        if C.SUBHEADER_SIZE + 4 + len(payload) > self._max_payload():
+            # Fragmentation requires a *reliable* stream: reassembly needs
+            # guaranteed in-order delivery, and the C client rejects
+            # best-effort outright (see uxr_prepare_output_stream_fragmented).
+            # Sending FRAGMENTs on a best-effort stream makes the Agent log
+            # "deserialization error processing WRITE_DATA" and drop them, so
+            # promote transparently rather than fail.
+            if not self._is_reliable(stream_id):
+                stream_id = self.reliable_stream()
+            elif stream_id not in self._out_reliable:
+                self.reliable_stream(stream_id - C.STREAM_RELIABLE)
+            sub = CDRWriter()
+            at = self._begin_submessage(sub, C.SUBMESSAGE_WRITE_DATA, C.FORMAT_DATA)
+            sub.raw(struct.pack(">H", rid))
+            sub.raw(datawriter)
+            sub.raw(payload)
+            self._end_submessage(sub, at)
+            self._send_fragmented(stream_id, sub.bytes())
+            return rid
+
+        reliable = self._is_reliable(stream_id)
+        if reliable and stream_id not in self._out_reliable:
+            self.reliable_stream(stream_id - C.STREAM_RELIABLE)
+        w = self._begin_message(stream_id)
         at = self._begin_submessage(w, C.SUBMESSAGE_WRITE_DATA, C.FORMAT_DATA)
         w.raw(struct.pack(">H", rid))
         w.raw(datawriter)
         w.raw(payload)
         self._end_submessage(w, at)
-        self._send(w)
+        if reliable:
+            self._send_reliable(stream_id, w, self._out_seq.get(stream_id, 1) - 1)
+        else:
+            self._send(w)
         return rid
 
     def request_read(self, datareader, max_samples=0xFFFF,

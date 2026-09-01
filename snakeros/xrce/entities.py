@@ -173,6 +173,37 @@ def datareader_xml(dds_topic_name, type_name, reliable=False, history_depth=None
     return _endpoint_xml("data_reader", dds_topic_name, type_name, reliable, history_depth)
 
 
+def _service_xml(tag, service_name, req_type, res_type,
+                 request_topic, reply_topic, profile="service"):
+    return (
+        "<dds>"
+        "<" + tag + ' profile_name="' + _xml_escape(profile) + '" '
+        'service_name="' + _xml_escape(service_name) + '" '
+        'request_type="' + _xml_escape(req_type) + '" '
+        'reply_type="' + _xml_escape(res_type) + '">'
+        "<request_topic_name>" + _xml_escape(request_topic) + "</request_topic_name>"
+        "<reply_topic_name>" + _xml_escape(reply_topic) + "</reply_topic_name>"
+        "</" + tag + ">"
+        "</dds>"
+    )
+
+
+def requester_xml(service_name, req_type, res_type):
+    return _service_xml(
+        "requester", service_name, req_type, res_type,
+        mangle_service_request(service_name),
+        mangle_service_reply(service_name),
+    )
+
+
+def replier_xml(service_name, req_type, res_type):
+    return _service_xml(
+        "replier", service_name, req_type, res_type,
+        mangle_service_request(service_name),
+        mangle_service_reply(service_name),
+    )
+
+
 __all__ = [
     "object_id",
     "parse_object_id",
@@ -187,6 +218,8 @@ __all__ = [
     "subscriber_xml",
     "datawriter_xml",
     "datareader_xml",
+    "requester_xml",
+    "replier_xml",
     "OBJK_PARTICIPANT",
     "OBJK_TOPIC",
     "OBJK_PUBLISHER",

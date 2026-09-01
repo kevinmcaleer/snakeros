@@ -201,6 +201,23 @@ def generate_module(package, defs):
             lines.append("    )")
         body.append("\n".join(lines))
 
+    # Group Request/Response pairs into a service class so the API can take
+    # a single ``SetBool`` rather than two loose message types.
+    srv_names = sorted({
+        d.name[:-8] for d in defs if d.kind == "srv" and d.name.endswith("_Request")
+    })
+    for sname in srv_names:
+        if not any(d.name == sname + "_Response" for d in defs):
+            continue
+        body.append(
+            "class {0}:\n"
+            '    """Service type: pairs the request and response messages."""\n'
+            '    _package_ = "{1}"\n'
+            '    _name_ = "{0}"\n'
+            "    Request = {0}_Request\n"
+            "    Response = {0}_Response".format(sname, package)
+        )
+
     head = [
         '"""SnakeROS message definitions for ``{}``.'.format(package),
         "",
