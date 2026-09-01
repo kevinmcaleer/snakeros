@@ -52,6 +52,36 @@ Every message pack imported, a publisher and a subscription created, publishing
 `sensor_msgs/Imu` — and **113 KB of the 190 KB heap is still free.** A Pico W
 is not the constrained stretch goal this project assumed it would be.
 
+## Leaks and fragmentation: 30-minute soak
+
+Heap exhaustion fails loudly. **Fragmentation does not** — it degrades slowly
+over tens of minutes and is the failure mode that shows up after a robot has
+been running all afternoon. `tests/soak.py` publishes an `Imu` plus a
+*varying-length* string (fixed sizes would not stress the allocator) and
+watches free heap.
+
+Two 30-minute runs under board-sized heap caps, against a live Agent:
+
+| | Pico W proxy (190 KB) | Pico 2 W proxy (400 KB) |
+|---|---|---|
+| Messages published | **59,887** | **60,001** |
+| Baseline free | 70,752 | 283,296 |
+| Final free | 69,696 | 282,336 |
+| **Net drift** | **1,056 bytes** | **960 bytes** |
+| Worst drift | 1,056 bytes | 1,024 bytes |
+| Verdict | **STABLE** | **STABLE** |
+
+Drift plateaued at about 1 KB within the first minute and never grew again
+across 60,000 messages. That is a one-off settling cost, not a leak and not
+fragmentation creep.
+
+```console
+$ micropython -X heapsize=190K tests/soak.py 127.0.0.1 1800 0xAABBCC01 soak_picow
+```
+
+Give each concurrent client a **distinct XRCE key** — two sharing one fight
+over entities on the Agent and the second fails to create a participant.
+
 ## 32-bit vs 64-bit heap cost
 
 Roughly halved, as you would expect for pointer-heavy structures:
