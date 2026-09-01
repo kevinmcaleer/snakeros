@@ -19,7 +19,12 @@ class UDPTransport:
     disturbing anything above.
     """
 
-    def __init__(self, host, port=8888, mtu=512, timeout=0.1):
+    # The socket timeout bounds how long a single recv() blocks when nothing
+    # has arrived, so it puts a floor under spin_once() and therefore a
+    # ceiling on the control-loop rate. At the old 0.1 s default a
+    # spin_once(2) really took 100 ms and a "50 Hz" timer fired at 10 Hz.
+    # Keep it small and let Session.poll() own the waiting.
+    def __init__(self, host, port=8888, mtu=512, timeout=0.002):
         self.host = host
         self.port = port
         self.mtu = mtu

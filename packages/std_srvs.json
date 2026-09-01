@@ -1,0 +1,9 @@
+{
+  "urls": [
+    [
+      "snakeros/msg/std_srvs.py",
+      "github:kevinmcaleer/snakeros/snakeros/msg/std_srvs.py"
+    ]
+  ],
+  "version": "0.1.0"
+}

@@ -1,0 +1,9 @@
+{
+  "urls": [
+    [
+      "snakeros/msg/nav_msgs.py",
+      "github:kevinmcaleer/snakeros/snakeros/msg/nav_msgs.py"
+    ]
+  ],
+  "version": "0.1.0"
+}
