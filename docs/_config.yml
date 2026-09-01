@@ -1,0 +1,4 @@
+title: SnakeROS
+description: A pure-Python ROS 2 client for MicroPython
+theme: jekyll-theme-cayman
+markdown: kramdown

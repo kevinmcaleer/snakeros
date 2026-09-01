@@ -58,25 +58,71 @@ who use it.
 
 ## Status
 
-**Pre-alpha — nothing works yet.** See the [tracking
-epic](https://github.com/kevinmcaleer/snakeros/issues/1) and the [project
-board](https://github.com/users/kevinmcaleer/projects/30) for what's being built
-and in what order.
+**Working.** Publishes and subscribes to real ROS 2 topics, runs services and
+parameters, over UDP and serial. Verified continuously against a **stock,
+unmodified micro-ROS Agent** with `ros2 topic echo`, `ros2 service call` and
+`ros2 param` doing the asserting.
 
-The critical path is short: [issue
-#9](https://github.com/kevinmcaleer/snakeros/issues/9) — UDP plus an XRCE
-handshake plus one `std_msgs/String` reaching `ros2 topic echo` — proves or
-kills the whole approach.
+| | |
+|---|---|
+| Publishers, subscriptions, timers | ✅ |
+| CDR encode + decode | ✅ 29/29 diffed against `rclpy`, both directions |
+| Services (client and server) | ✅ |
+| Parameters (`ros2 param`) | ✅ live get/set with validation |
+| UDP transport | ✅ |
+| Serial transport (HDLC + CRC-16) | ✅ 0 CRC errors over a real Agent |
+| Reliable streams + fragmentation | ✅ 1656-byte message through a 512-byte MTU |
+| Message packs + `.msg` codegen | ✅ generated from real ROS 2 definitions |
+| Diff-drive robot example | ✅ odometry integrates, fail-safe fires |
+| **Physical board** | ⚠️ **not yet run on hardware** — see [bring-up](docs/bringup.md) |
+
+Everything above is tested on the MicroPython **Unix port** against a real
+Agent, which exercises the whole protocol stack. It has not yet been run on a
+physical Pico. The board-facing code is written; the numbers below are host
+numbers.
+
+## Measured
+
+```
+geometry_msgs/Twist      5.4 us encode   48 bytes
+sensor_msgs/Imu         43.1 us encode  312 bytes
+nav_msgs/Odometry       96.8 us encode  704 bytes
+
+timer jitter at 50 Hz:  mean 20005 us against a 20000 us target
+.mpy build:             38% of source size
+```
+
+Full tables, and an honest warning about host-vs-board, in
+[docs/memory.md](docs/memory.md).
+
+## Try it
+
+```console
+$ docker run -it --rm -p 8888:8888/udp microros/micro-ros-agent:jazzy udp4 --port 8888
+$ make rig-up && make test
+```
+
+## Documentation
+
+[Getting started](docs/index.md) ·
+[Architecture](docs/architecture.md) ·
+[API](docs/api.md) ·
+[Messages](docs/messages.md) ·
+[Transports](docs/transports.md) ·
+[Memory](docs/memory.md) ·
+[Troubleshooting](docs/troubleshooting.md) ·
+[Limitations](docs/limitations.md)
 
 ## Scope
 
-**In scope for v1:** publishers, subscriptions, timers, services, UDP and serial
-transports, `std_msgs` / `geometry_msgs` / `sensor_msgs`, and a `.msg` codegen
-tool for everything else.
+**In:** publishers, subscriptions, timers, services, parameters, UDP and serial
+transports, `std_msgs` / `geometry_msgs` / `sensor_msgs` / `nav_msgs`, and a
+`.msg` codegen tool for everything else.
 
-**Out of scope for v1:** actions, TF, the ROS graph API (the Agent owns
-discovery), and real-time guarantees. SnakeROS is built for `cmd_vel`, `odom`,
-IMU and joint states at 10–50 Hz — not for camera frames or lidar scans.
+**Out:** actions, TF, the ROS graph API (the Agent owns discovery), security,
+and real-time guarantees. Built for `cmd_vel`, `odom`, IMU and joint states at
+10–50 Hz — not camera frames or lidar scans. See
+[limitations](docs/limitations.md).
 
 ## Licence
 
