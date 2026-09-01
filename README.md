@@ -58,9 +58,15 @@ who use it.
 
 ## Status
 
-**Pre-alpha — nothing works yet.** See the [project
-board](https://github.com/kevinmcaleer/snakeros/projects) and the tracking epic
-for what's being built and in what order.
+**Pre-alpha — nothing works yet.** See the [tracking
+epic](https://github.com/kevinmcaleer/snakeros/issues/1) and the [project
+board](https://github.com/users/kevinmcaleer/projects/30) for what's being built
+and in what order.
+
+The critical path is short: [issue
+#9](https://github.com/kevinmcaleer/snakeros/issues/9) — UDP plus an XRCE
+handshake plus one `std_msgs/String` reaching `ros2 topic echo` — proves or
+kills the whole approach.
 
 ## Scope
 
