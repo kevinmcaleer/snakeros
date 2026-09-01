@@ -74,7 +74,10 @@ unmodified micro-ROS Agent** with `ros2 topic echo`, `ros2 service call` and
 | Reliable streams + fragmentation | ✅ 1656-byte message through a 512-byte MTU |
 | Message packs + `.msg` codegen | ✅ generated from real ROS 2 definitions |
 | Diff-drive robot example | ✅ odometry integrates, fail-safe fires |
-| **Physical board** | ⚠️ **not yet run on hardware** — see [bring-up](docs/bringup.md) |
+| Runs on 32-bit ARM under a 190 KB heap | ✅ 113 KB free with every pack imported |
+| Core on bare-metal ARM Cortex-M3 | ✅ frozen firmware, no OS |
+| 30-minute soak (leaks/fragmentation) | ✅ ~60,000 msgs, ~1 KB drift, stable |
+| **Physical silicon** | ⚠️ **never run** — [checklist](docs/bringup.md) |
 
 Everything above is tested on the MicroPython **Unix port** against a real
 Agent, which exercises the whole protocol stack. It has not yet been run on a
