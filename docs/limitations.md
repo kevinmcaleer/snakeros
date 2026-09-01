@@ -45,6 +45,12 @@ Not for camera frames, and not for lidar scans at rate. A 400-point
 you can publish one occasionally, not at 20 Hz. `sensor_msgs/Image` and
 `PointCloud2` are deliberately not shipped.
 
+**Lidar is planned for v3** *([epic #47](https://github.com/kevinmcaleer/snakeros/issues/47))*.
+Holding numeric fields as `array` and encoding them as a length plus a memcpy
+measures **43× faster and 7.7× less heap**, which moves an LD06 at 10 Hz from
+impossible to plausible. Cameras stay out: a 320×240 grayscale frame is 76 kB,
+which is not a memcpy away from feasible.
+
 See [Memory and performance](memory.md) for measured numbers.
 
 ## QoS

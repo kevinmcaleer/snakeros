@@ -142,8 +142,32 @@ across six milestones:
 | **Documentation** | a [Diátaxis](https://diataxis.fr/) restructure — tutorials, how-to, reference, explanation |
 | **Ecosystem** | Zenoh transport, hardware CI |
 
-Still out of scope in v2: security (SROS2/DDS-Security), camera and lidar at
-rate, hard real-time, and a full tf2 tree.
+Still out of scope in v2: security (SROS2/DDS-Security), cameras, hard
+real-time, and a full tf2 tree.
+
+### Planned for v3 — lidar
+
+[**Epic #47**](https://github.com/kevinmcaleer/snakeros/issues/47) — 14 issues
+bringing the cheap [LDROBOT LD06](https://www.yahboom.net/xiazai/LiDar-LD06/LDROBOT_LD06_Datasheet.pdf)
+into scope, plus RPLIDAR and solid-state ToF sensors.
+
+v1 ruled lidar out on measurement: a 450-point `LaserScan` costs **~1186 µs
+and 28.6 KB** as SnakeROS stands. v3 changes that, because a CDR
+little-endian `float32[]` body turns out to be **byte-identical to an
+`array('f')` buffer** — so a scan encodes as a length plus a memcpy rather
+than a loop over 450 boxed floats:
+
+```
+$ micropython tests/bench_bulk.py
+IDENTICAL        : True
+per-element loop :    411.7 us
+length + memcpy  :      9.7 us   (43x faster)
+list of floats   :  14304 bytes
+array('f')       :   1856 bytes  (7.7x smaller)
+```
+
+Still out of scope in v3: cameras (`sensor_msgs/Image` — a 320×240 frame is
+76 kB), on-board SLAM, and 3D spinning lidar.
 
 ## Licence
 
