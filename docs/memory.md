@@ -14,21 +14,59 @@ camera frames, not lidar scans at rate. The encoder is comfortably fast enough
 for the first and comfortably too slow for the second, and the tables below
 show exactly where the line falls.
 
-## A warning about these numbers
+## Three measurement environments
 
-The results below are from the **MicroPython Unix port on an Apple Silicon
-laptop**. They are a *relative profile* and a regression check -- which
-messages are expensive, how much the fast path helps, whether a change made
-things worse. They are **not** board numbers: a desktop has 64-bit pointers, a
-far faster CPU and effectively unlimited heap.
+Board numbers need a board. Short of one, these figures come from three places
+and it matters which:
 
-Board figures need real hardware. Run them yourself with:
+| Environment | Pointers | Heap | What it tells you |
+|---|---|---|---|
+| Unix port, laptop | 64-bit | unlimited | Relative profile, regression checks. **Timing is real.** |
+| **32-bit ARM (`armv7l`), 190 KB heap** | **32-bit** | **190 KB** | **Heap accounting close to a real Pico W.** Timing is emulated and meaningless. |
+| A physical Pico 2 W / Pico W | 32-bit | 190-400 KB | The real answer. Not yet run — see [bring-up](bringup.md). |
 
-```console
-$ micropython tests/bench.py 192.168.1.10
+The 32-bit ARM column is the useful one for memory: it is a real 32-bit
+MicroPython v1.29.0 with a real allocator running under a heap cap, against a
+real micro-ROS Agent. Its *timing* is emulated (roughly 13× slower than the
+host) and should be ignored entirely.
+
+## Does it fit on a Pico W?
+
+**Yes, comfortably.** Measured on 32-bit ARM with a 190 KB heap — the tightest
+realistic target:
+
+```
+heap total 190,080 bytes
+  core             43,072   (144,320 free)
+  std_msgs         10,704   (133,536 free)
+  geometry_msgs    11,888   (121,568 free)
+  sensor_msgs       6,240   (115,248 free)
+  node + session       784   (114,384 free)
+  publisher            128   (114,192 free)
+  subscription         160   (113,952 free)
+
+  384 Imu published, 113,056 bytes still free
 ```
 
-and see [Hardware bring-up](bringup.md).
+Every message pack imported, a publisher and a subscription created, publishing
+`sensor_msgs/Imu` — and **113 KB of the 190 KB heap is still free.** A Pico W
+is not the constrained stretch goal this project assumed it would be.
+
+## 32-bit vs 64-bit heap cost
+
+Roughly halved, as you would expect for pointer-heavy structures:
+
+| | 64-bit host | **32-bit ARM** |
+|---|---|---|
+| `snakeros` core | 61,152 | **41,088** |
+| `std_msgs` | 18,624 | **10,368** |
+| `geometry_msgs` | 13,920 | **7,344** |
+| `sensor_msgs` | 11,008 | **6,144** |
+| one `Twist` instance | 256 | **128** |
+| one `Imu` instance | 1,184 | **624** |
+| one `Odometry` instance | 1,984 | **992** |
+
+Quote the 32-bit column when budgeting for a board.
 
 ## Full benchmark output
 
@@ -121,9 +159,10 @@ subscribes to something chatty.
 | A **reliable** stream | `max_buffered * MTU` ≈ **4.4 KB** at the defaults |
 | A declared parameter | ~120-200 bytes |
 
-The `.mpy` build is **38% of the source size** and measurably reduces heap. On
-a Pico W that is the difference between fitting and not; see
-[Packaging](packaging.md).
+The `.mpy` build is **36% of the source size** and cuts the *peak* heap during
+import by ~32 KB — which is what actually raises `MemoryError` on a board. It
+does **not** reduce steady-state heap. See [Packaging](packaging.md) for the
+measured table.
 
 ## If you run out of memory
 

@@ -36,17 +36,36 @@ $ mpremote connect /dev/tty.usbmodem1101 fs cp -r snakeros :
 
 ## The `.mpy` build
 
-Bytecode instead of source: **38% of the size**, and measurably less heap.
-On a Pico W that can be the difference between fitting and not.
-
 ```console
 $ make mpy
 compiled 26 modules to build/mpy
-.py total   128,340 bytes
-.mpy total   48,787 bytes  (38% of source)
+.py total   134,861 bytes
+.mpy total   48,787 bytes  (36% of source)
 ```
 
 Copy `build/mpy/snakeros` to the board in place of `snakeros`.
+
+### What it actually buys
+
+Measured on **32-bit ARM MicroPython v1.29.0** with a 190 KB heap — i.e. a
+realistic Pico W footprint, not a 64-bit desktop:
+
+| | `.py` | `.mpy` | |
+|---|---|---|---|
+| Flash / filesystem | 134,861 B | **48,787 B** | 36% |
+| Import time | 78.7 ms | **18.6 ms** | 4.2× faster |
+| **Peak heap dip during import** | 128,848 B | **96,848 B** | **32 KB less** |
+| Steady heap after import | 71,344 B | 73,760 B | ~2 KB *more* |
+
+**The peak matters more than the steady state.** Importing `.py` needs the
+parser and compiler's working memory, and that transient spike is what raises
+`MemoryError` on a constrained board — not the settled figure. Saving 32 KB of
+peak on a board with 190 KB of heap is the difference between fitting and not.
+
+Steady-state heap is **not** improved — it is marginally worse, because
+loading a `.mpy` interns qstrs slightly differently. An earlier version of this
+page claimed `.mpy` "measurably reduces heap"; that was measured on the 64-bit
+Unix port and does not hold on a 32-bit target. Corrected here.
 
 ### Are `.mpy` files board-dependent?
 
