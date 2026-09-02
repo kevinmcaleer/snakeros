@@ -47,6 +47,68 @@ Agent parses your datagram, logs it happily at `-v6`, and silently drops it
 because it is looking up a session that does not exist yet. No error, no NACK,
 no log line saying why.
 
+## `ImportError: no module named 'snakeros.Node'`
+
+Note the **capital N**. That is the tell, and it means something quite
+different from what it looks like:
+
+| Error | Meaning |
+|---|---|
+| `no module named 'snakeros.Node'` | The package imported fine but **defines nothing**. `Node` is a *name*, not a module. |
+| `no module named 'snakeros.node'` | `node.py` is genuinely **missing** — a partial install. |
+
+The capital-N case is almost always one of two things.
+
+**1. A stale or empty `snakeros/` is shadowing your install.** MicroPython
+searches the working directory **before** `/lib`, so a leftover copy wins even
+when `/lib/snakeros` is perfect. Find it:
+
+```python
+import sys, os
+for p in sys.path:
+    d = (p or ".") + "/snakeros"
+    try:
+        n = len(os.listdir(d))
+        sz = os.stat(d + "/__init__.py")[6]
+        print(("%-20s %d entries, __init__.py %d bytes" % (d, n, sz))
+              + ("   <-- EMPTY, DELETE THIS" if sz == 0 else ""))
+    except OSError:
+        pass
+```
+
+Delete the empty one and retry.
+
+**2. The files transferred as zero bytes.** A sync or copy that creates the
+files but never writes their contents leaves a valid-looking tree that imports
+and defines nothing. Check:
+
+```python
+import os
+def walk(p, acc=[0, 0]):
+    for e in os.listdir(p):
+        f = p + "/" + e
+        if os.stat(f)[0] & 0x4000:
+            walk(f, acc)
+        else:
+            if os.stat(f)[6] == 0:
+                acc[1] += 1
+                print("EMPTY", f)
+            acc[0] += 1
+    return acc
+print("%d files, %d empty" % tuple(walk("/lib/snakeros")))
+```
+
+A good install reports **27 files, 0 empty**.
+
+A third, rarer cause: if you imported `snakeros` earlier in the same REPL
+session while it was broken, MicroPython has cached the broken module. Soft
+reset (**Ctrl-D**) before retrying.
+
+**Do not add `sys.path.insert(0, ".")` to work around this.** It makes the
+shadowing case worse by putting the working directory ahead of `/lib`
+explicitly. The shipped examples deliberately do not do this, and detect the
+condition instead.
+
 ## The topic does not appear in `ros2 topic list`
 
 - **Name mangling.** ROS 2 topics are `rt/` + the topic name on the DDS side.

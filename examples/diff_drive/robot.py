@@ -29,16 +29,54 @@ import math
 import sys
 import time
 
-sys.path.insert(0, ".")
+# MicroPython already has "" (the working directory) on sys.path, so an
+# installed SnakeROS -- and hardware.py sitting beside this file on a device --
+# are both importable with no path juggling at all.
+#
+# Do NOT insert "." here. On a device that puts the working directory ahead of
+# /lib, letting a stale or partial snakeros/ shadow the real install. It fails
+# as:
+#
+#     ImportError: no module named 'snakeros.Node'
+#
+# which is confusing, because the shadowing package imports perfectly well and
+# simply defines nothing. The capital N is the tell: a missing *name*. A
+# lowercase 'snakeros.node' would mean a missing *module*.
 
-from snakeros import Node                                    # noqa: E402
+try:
+    from snakeros import Node
+except ImportError:
+    # Distinguish "not installed" from "shadowed by a stale copy" -- the raw
+    # error ("no module named 'snakeros.Node'") suggests neither. Note the
+    # probe must not raise inside its own except clause, or the shadow case
+    # gets swallowed and misreported as "not installed".
+    _sr = None
+    try:
+        import snakeros as _sr
+    except ImportError:
+        pass
+    if _sr is not None:
+        raise ImportError(
+            "SnakeROS imported from %s but has no 'Node'. A stale or empty "
+            "snakeros/ is shadowing your real install -- MicroPython searches "
+            "the working directory before /lib, so the broken copy wins. "
+            "Delete it, then retry. sys.path = %r"
+            % (getattr(_sr, "__file__", "?"), sys.path))
+    raise ImportError(
+        "SnakeROS is not installed. On the device: "
+        "import mip; mip.install('github:kevinmcaleer/snakeros'). "
+        "sys.path = %r" % (sys.path,))
 from snakeros.board import ResilientNode, connect_wifi, heap_report, preallocate  # noqa: E402
 from snakeros.msg.geometry_msgs import Twist                 # noqa: E402
 from snakeros.msg.nav_msgs import Odometry                   # noqa: E402
 from snakeros.msg.sensor_msgs import Imu, JointState         # noqa: E402
 from snakeros.msg.std_srvs import Trigger                    # noqa: E402
 
-from .hardware import IMU, Encoder, Motor, HAVE_HARDWARE     # noqa: E402
+try:
+    from .hardware import IMU, Encoder, Motor, HAVE_HARDWARE
+except (ImportError, ValueError):  # run directly, not as a package
+    sys.path.insert(0, "examples/diff_drive")
+    from hardware import IMU, Encoder, Motor, HAVE_HARDWARE
 
 # -- pin map (adjust for your robot) --------------------------------------
 LEFT_IN1, LEFT_IN2, LEFT_EN = 2, 3, 4

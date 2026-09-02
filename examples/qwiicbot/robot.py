@@ -36,17 +36,54 @@ rates; wheel odometry would need encoders the robot does not have.
 import sys
 import time
 
-sys.path.insert(0, ".")
-sys.path.insert(0, "examples/qwiicbot")
+# MicroPython already has "" (the working directory) on sys.path, so an
+# installed SnakeROS -- and hardware.py sitting beside this file on a device --
+# are both importable with no path juggling at all.
+#
+# Do NOT insert "." here. On a device that puts the working directory ahead of
+# /lib, letting a stale or partial snakeros/ shadow the real install. It fails
+# as:
+#
+#     ImportError: no module named 'snakeros.Node'
+#
+# which is confusing, because the shadowing package imports perfectly well and
+# simply defines nothing. The capital N is the tell: a missing *name*. A
+# lowercase 'snakeros.node' would mean a missing *module*.
 
-from snakeros import Node                                          # noqa: E402
+try:
+    from snakeros import Node
+except ImportError:
+    # Distinguish "not installed" from "shadowed by a stale copy" -- the raw
+    # error ("no module named 'snakeros.Node'") suggests neither. Note the
+    # probe must not raise inside its own except clause, or the shadow case
+    # gets swallowed and misreported as "not installed".
+    _sr = None
+    try:
+        import snakeros as _sr
+    except ImportError:
+        pass
+    if _sr is not None:
+        raise ImportError(
+            "SnakeROS imported from %s but has no 'Node'. A stale or empty "
+            "snakeros/ is shadowing your real install -- MicroPython searches "
+            "the working directory before /lib, so the broken copy wins. "
+            "Delete it, then retry. sys.path = %r"
+            % (getattr(_sr, "__file__", "?"), sys.path))
+    raise ImportError(
+        "SnakeROS is not installed. On the device: "
+        "import mip; mip.install('github:kevinmcaleer/snakeros'). "
+        "sys.path = %r" % (sys.path,))
 from snakeros.board import ResilientNode, connect_wifi, heap_report, preallocate  # noqa: E402
 from snakeros.msg.geometry_msgs import Twist                       # noqa: E402
 from snakeros.msg.sensor_msgs import Imu, Range                    # noqa: E402
 from snakeros.msg.std_msgs import String                           # noqa: E402
 from snakeros.msg.std_srvs import SetBool, Trigger                 # noqa: E402
 
-from hardware import Buzzer, Drive, Face, Imu as ImuSensor, Rangefinder  # noqa: E402
+try:
+    from hardware import Buzzer, Drive, Face, Imu as ImuSensor, Rangefinder
+except ImportError:  # running from the repo root rather than on a device
+    sys.path.insert(0, "examples/qwiicbot")
+    from hardware import Buzzer, Drive, Face, Imu as ImuSensor, Rangefinder
 
 # Stop if no command arrives within this long. A robot that keeps driving on
 # a stale command after the link drops is the failure that breaks things.
