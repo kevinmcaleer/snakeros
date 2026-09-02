@@ -28,11 +28,6 @@ Or on a laptop, with simulated Modulinos and a real Agent::
 
     micropython examples/qwiicbot/robot.py 127.0.0.1
 
-**On a memory-tight board (ESP32, Pico W), do not pass ``ssid``.** The WiFi
-radio needs a large contiguous allocation and will fail with "Wifi Out of
-Memory" if it is started after these imports. Bring WiFi up in ``boot.py``
-first (see ``boot.py`` beside this file), then call ``main(agent=...)``.
-
 **No odometry.** SMARS's N20 gearmotors have no encoders, so there is no
 honest ``/odom`` to publish and none is faked. The IMU gives orientation
 rates; wheel odometry would need encoders the robot does not have.
@@ -310,6 +305,5 @@ def main(agent="127.0.0.1", port=8888, ssid=None, password=None, resilient=True)
 
 
 if __name__ == "__main__":
-    # main(sys.argv[1] if len(sys.argv) > 1 else "127.0.0.1")
-    from secret import WIFI_SSID, WIFI_PASSWORD
-    main(agent="192.168.1.137", ssid=WIFI_SSID, password=WIFI_PASSWORD)
+    main(sys.argv[1] if len(sys.argv) > 1 else "127.0.0.1")
+    

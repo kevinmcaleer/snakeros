@@ -31,11 +31,13 @@ class UDPTransport:
         self.timeout = timeout
         self._sock = None
         self._addr = None
+        self._rxbuf = None
 
     def open(self):
         ai = socket.getaddrinfo(self.host, self.port, 0, socket.SOCK_DGRAM)[0]
         self._addr = ai[-1]
         self._sock = socket.socket(ai[0], socket.SOCK_DGRAM)
+        self._rxbuf = bytearray(self.mtu + 64)
         try:
             self._sock.settimeout(self.timeout)
         except (AttributeError, OSError):
@@ -59,10 +61,20 @@ class UDPTransport:
             raise TransportError("send failed: {}".format(e))
 
     def recv(self):
-        """Return one datagram, or ``None`` if nothing arrived in time."""
+        """Return one datagram, or ``None`` if nothing arrived in time.
+
+        Reads into a buffer allocated once at open() rather than letting
+        ``recv`` allocate per call. On a board with tens of KB free, a fresh
+        allocation on every poll is a reliable way to fragment the heap.
+        """
         if self._sock is None:
             raise NotConnectedError("transport not open")
         try:
+            if self._rxbuf is not None and hasattr(self._sock, "recv_into"):
+                n = self._sock.recv_into(self._rxbuf)
+                if not n:
+                    return None
+                return bytes(memoryview(self._rxbuf)[:n])
             data = self._sock.recv(self.mtu + 64)
         except OSError:
             # Timeout or EAGAIN -- both mean "nothing yet", not "broken".

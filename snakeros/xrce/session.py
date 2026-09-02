@@ -123,7 +123,10 @@ class Session:
         struct.pack_into("<H", w.buf, length_at, payload_len)
 
     def _send(self, w):
-        self.transport.send(w.bytes())
+        # Send the writer's bytearray directly. w.bytes() would copy the whole
+        # datagram, and on a memory-tight board (an ESP32 has ~35 KB free once
+        # WiFi is up) that spare copy is enough to turn a send into ENOMEM.
+        self.transport.send(w.buf)
 
     # -- reliable streams --------------------------------------------------
 
