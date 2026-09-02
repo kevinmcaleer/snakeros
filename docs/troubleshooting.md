@@ -47,6 +47,63 @@ Agent parses your datagram, logs it happily at `-v6`, and silently drops it
 because it is looking up a session that does not exist yet. No error, no NACK,
 no log line saying why.
 
+## `OSError: [Errno 12] ENOMEM` on send (ESP32)
+
+Sends fail even though `gc.mem_free()` looks healthy. That is because **ESP32
+has two heaps** and `gc.mem_free()` only reports one:
+
+* MicroPython's **GC heap** — Python objects
+* The **ESP-IDF heap** — where lwIP allocates network buffers
+
+Check the one that matters:
+
+```python
+import esp32
+print(esp32.idf_heap_info(esp32.HEAP_DATA))
+```
+
+Each tuple is `(total, free, largest_free, min_free)`. **`largest_free` is the
+number to read** — lwIP needs a *contiguous* block, so a send fails once that
+gets small regardless of the total. A board in this state looks like:
+
+```
+[(240, 4, 0, 4), (7288, 4, 0, 4), ..., (113840, 956, 400, 56)]
+                                                     ^^^ 400 bytes
+```
+
+976 bytes free across the whole IDF heap, largest block 400 — not enough for a
+24-byte datagram's pbuf.
+
+**Why it happens:** MicroPython's GC heap on ESP32 **grows by claiming blocks
+from the IDF heap**, and never gives them back. Import enough and the Python
+heap starves lwIP.
+
+**Fixes, in order of effect:**
+
+1. **`gc.threshold()` before any heavy import** — in `boot.py`, so the heap
+   collects instead of growing:
+   ```python
+   gc.collect()
+   gc.threshold(gc.mem_alloc() + gc.mem_free() // 4)
+   ```
+2. **Import fewer message packs.** They are the bulk. `sensor_msgs`
+   transitively pulls `geometry_msgs` and `std_msgs`, so those are not free
+   choices.
+3. **Drop parameters and services** if unused — `rcl_interfaces` alone is
+   substantial, and five `declare_parameter` calls stand up six services.
+4. **Smaller MTU** — `Node(..., mtu=256)` halves the transport buffers.
+5. See [`examples/qwiicbot/robot_minimal.py`](https://github.com/kevinmcaleer/snakeros/blob/main/examples/qwiicbot/robot_minimal.py)
+   for a cut-down node that keeps `/cmd_vel` and `/range` and drops the rest.
+
+**If none of that is enough**, the board is genuinely too tight. A plain ESP32
+with WiFi is the most constrained target SnakeROS has been run on. An ESP32
+with PSRAM, or a Pico 2 W (520 KB SRAM), has room to spare.
+
+A related symptom: `ENOMEM` **alternating with `-203`** across retries usually
+means sockets are leaking, not memory exhaustion — lwIP allows only a handful
+of concurrent sockets. That was a SnakeROS bug, fixed; make sure you are on a
+current version.
+
 ## `OSError: Wifi Out of Memory` (ESP32, Pico W)
 
 Raised by `wlan.active(True)`. The radio needs a **large contiguous

@@ -29,5 +29,22 @@ if wlan.isconnected():
     print("WiFi up:", wlan.ifconfig()[0])
 else:
     print("WiFi FAILED -- check SSID/password")
+
 gc.collect()
+
+# Collect early rather than growing the heap. This is the single most useful
+# line on an ESP32: MicroPython's GC heap grows by claiming blocks from the
+# ESP-IDF heap -- the same heap lwIP takes its network buffers from -- and it
+# never gives them back. Setting a threshold here, before any heavy import,
+# keeps the Python heap small and leaves lwIP room to breathe.
+gc.threshold(gc.mem_alloc() + gc.mem_free() // 4)
+
 print("free heap after WiFi:", gc.mem_free())
+try:
+    import esp32
+    # (total, free, largest_free, min_free) -- 'largest_free' is what lwIP
+    # needs, and a send fails with ENOMEM when it gets small regardless of
+    # what gc.mem_free() says.
+    print("idf heap:", esp32.idf_heap_info(esp32.HEAP_DATA)[-1])
+except ImportError:
+    pass

@@ -80,6 +80,23 @@ $ mpremote fs cp examples/qwiicbot/hardware.py :
 $ mpremote fs cp examples/qwiicbot/robot.py :
 ```
 
+## If the board runs out of memory
+
+A plain ESP32 with WiFi is the tightest target this has been run on. If sends
+fail with `ENOMEM`, use [`robot_minimal.py`](robot_minimal.py) — same robot,
+`/cmd_vel` in and `/range` out, with parameters, services, the IMU, the face
+and the buzzer removed, and a 256-byte MTU.
+
+Check which heap is actually exhausted first:
+
+```python
+import esp32
+print(esp32.idf_heap_info(esp32.HEAP_DATA))   # (total, free, largest, min)
+```
+
+`largest` is what lwIP needs. See
+[troubleshooting](../../docs/troubleshooting.md) for the full explanation.
+
 ## Parts
 
 | Part | Notes |
