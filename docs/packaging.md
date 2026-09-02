@@ -11,9 +11,19 @@ import mip
 mip.install('github:kevinmcaleer/snakeros')
 ```
 
-That pulls the core plus `std_msgs`, `geometry_msgs` and
-`builtin_interfaces`. Other packs are separate so a board only pays heap for
-what it uses:
+That is the whole minimum install: **23 files, ~121 KB** — the core plus
+`std_msgs`, `geometry_msgs` and `builtin_interfaces`.
+
+| | files | bytes |
+|---|---|---|
+| `snakeros/` (node, board, services, parameters, errors) | 6 | 36,006 |
+| `snakeros/xrce/` (the protocol) | 5 | 40,284 |
+| `snakeros/msg/` (base + 3 default packs) | 5 | 21,701 |
+| `snakeros/transport/` (UDP, serial, framing) | 4 | 15,474 |
+| `snakeros/cdr/` (encode/decode) | 3 | 7,739 |
+| **total** | **23** | **121,204** |
+
+Other packs are separate so a board only pays heap for what it uses:
 
 ```python
 mip.install('github:kevinmcaleer/snakeros/packages/sensor_msgs.json')
@@ -39,8 +49,8 @@ $ mpremote connect /dev/tty.usbmodem1101 fs cp -r snakeros :
 ```console
 $ make mpy
 compiled 26 modules to build/mpy
-.py total   134,861 bytes
-.mpy total   48,787 bytes  (36% of source)
+.py total   141,030 bytes
+.mpy total   50,979 bytes  (36% of source)
 ```
 
 Copy `build/mpy/snakeros` to the board in place of `snakeros`.
@@ -52,7 +62,7 @@ realistic Pico W footprint, not a 64-bit desktop:
 
 | | `.py` | `.mpy` | |
 |---|---|---|---|
-| Flash / filesystem | 134,861 B | **48,787 B** | 36% |
+| Flash / filesystem | 141,030 B | **50,979 B** | 36% |
 | Import time | 78.7 ms | **18.6 ms** | 4.2× faster |
 | **Peak heap dip during import** | 128,848 B | **96,848 B** | **32 KB less** |
 | Steady heap after import | 71,344 B | 73,760 B | ~2 KB *more* |
