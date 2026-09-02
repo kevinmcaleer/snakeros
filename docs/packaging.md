@@ -49,8 +49,8 @@ $ mpremote connect /dev/tty.usbmodem1101 fs cp -r snakeros :
 ```console
 $ make mpy
 compiled 26 modules to build/mpy
-.py total   141,030 bytes
-.mpy total   50,979 bytes  (36% of source)
+.py total   135,194 bytes
+.mpy total   50,770 bytes  (38% of source)
 ```
 
 Copy `build/mpy/snakeros` to the board in place of `snakeros`.
@@ -62,7 +62,7 @@ realistic Pico W footprint, not a 64-bit desktop:
 
 | | `.py` | `.mpy` | |
 |---|---|---|---|
-| Flash / filesystem | 141,030 B | **50,979 B** | 36% |
+| Flash / filesystem | 135,194 B | **50,770 B** | 38% |
 | Import time | 78.7 ms | **18.6 ms** | 4.2× faster |
 | **Peak heap dip during import** | 128,848 B | **96,848 B** | **32 KB less** |
 | Steady heap after import | 71,344 B | 73,760 B | ~2 KB *more* |
