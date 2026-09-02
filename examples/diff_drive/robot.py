@@ -72,11 +72,36 @@ from snakeros.msg.nav_msgs import Odometry                   # noqa: E402
 from snakeros.msg.sensor_msgs import Imu, JointState         # noqa: E402
 from snakeros.msg.std_srvs import Trigger                    # noqa: E402
 
-try:
-    from .hardware import IMU, Encoder, Motor, HAVE_HARDWARE
-except (ImportError, ValueError):  # run directly, not as a package
-    sys.path.insert(0, "examples/diff_drive")
-    from hardware import IMU, Encoder, Motor, HAVE_HARDWARE
+def _find_hardware():
+    """Import hardware.py, which must sit beside this file. See qwiicbot."""
+    try:
+        from . import hardware
+        return hardware
+    except (ImportError, ValueError, KeyError):
+        # MicroPython raises KeyError('__main__') for a relative import with
+        # no package context, rather than ImportError as CPython does.
+        pass
+    candidates = ["examples/diff_drive", "/diff_drive", "/lib/diff_drive"]
+    here = globals().get("__file__")
+    if here and "/" in here:
+        candidates.insert(0, here.rsplit("/", 1)[0])
+    for path in candidates:
+        if path not in sys.path:
+            sys.path.insert(0, path)
+        try:
+            return __import__("hardware")
+        except ImportError:
+            sys.path.remove(path)
+    raise ImportError(
+        "hardware.py not found. It must sit beside robot.py -- copy both to "
+        "the device and run from that directory. Looked in: %r" % (sys.path,))
+
+
+_hw = _find_hardware()
+IMU = _hw.IMU
+Encoder = _hw.Encoder
+Motor = _hw.Motor
+HAVE_HARDWARE = _hw.HAVE_HARDWARE
 
 # -- pin map (adjust for your robot) --------------------------------------
 LEFT_IN1, LEFT_IN2, LEFT_EN = 2, 3, 4

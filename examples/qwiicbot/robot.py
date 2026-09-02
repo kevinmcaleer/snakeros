@@ -79,11 +79,38 @@ from snakeros.msg.sensor_msgs import Imu, Range                    # noqa: E402
 from snakeros.msg.std_msgs import String                           # noqa: E402
 from snakeros.msg.std_srvs import SetBool, Trigger                 # noqa: E402
 
-try:
-    from hardware import Buzzer, Drive, Face, Imu as ImuSensor, Rangefinder
-except ImportError:  # running from the repo root rather than on a device
-    sys.path.insert(0, "examples/qwiicbot")
-    from hardware import Buzzer, Drive, Face, Imu as ImuSensor, Rangefinder
+def _find_hardware():
+    """Import hardware.py, which must sit beside this file.
+
+    Handles three layouts: a repo checkout (cwd is the repo root), a device
+    with both files in the working directory, and `mpremote run`, where the
+    script arrives on stdin so the working directory is / rather than wherever
+    the file lives.
+    """
+    candidates = ["examples/qwiicbot", "/qwiicbot", "/lib/qwiicbot"]
+    here = globals().get("__file__")
+    if here and "/" in here:
+        candidates.insert(0, here.rsplit("/", 1)[0])
+    for path in candidates:
+        if path not in sys.path:
+            sys.path.insert(0, path)
+        try:
+            return __import__("hardware")
+        except ImportError:
+            sys.path.remove(path)
+    raise ImportError(
+        "hardware.py not found. It must sit beside robot.py -- copy both:\n"
+        "    mpremote fs cp examples/qwiicbot/hardware.py :\n"
+        "    mpremote fs cp examples/qwiicbot/robot.py :\n"
+        "then run it from that directory. Looked in: %r" % (sys.path,))
+
+
+_hw = _find_hardware()
+Buzzer = _hw.Buzzer
+Drive = _hw.Drive
+Face = _hw.Face
+ImuSensor = _hw.Imu
+Rangefinder = _hw.Rangefinder
 
 # Stop if no command arrives within this long. A robot that keeps driving on
 # a stale command after the link drops is the failure that breaks things.
