@@ -52,6 +52,45 @@ Every message pack imported, a publisher and a subscription created, publishing
 `sensor_msgs/Imu` — and **113 KB of the 190 KB heap is still free.** A Pico W
 is not the constrained stretch goal this project assumed it would be.
 
+## ESP32: the two-heap trap, measured on real silicon
+
+An ESP32 has **two heaps**, and `gc.mem_free()` only reports one:
+
+* MicroPython's **GC heap** — Python objects
+* The **ESP-IDF heap** — where lwIP takes its network buffers
+
+MicroPython's GC heap *grows by claiming blocks from the IDF heap and never
+returns them*. Load enough before the network is up and lwIP starves, so sends
+fail with `ENOMEM` while `gc.mem_free()` still looks fine.
+
+Measured on a Generic ESP32 (MicroPython v1.29.0), same board, same firmware,
+differing only in what `boot.py` does:
+
+| | `boot.py` imports SnakeROS first | `boot.py` uses raw `network` + `gc.threshold()` |
+|---|---|---|
+| python heap free | 35,664 | **113,584** |
+| IDF heap free | 956 | **85,980** |
+| **IDF largest contiguous** | **400 B** | **59,392 B** |
+| result | every send `ENOMEM` | works |
+
+**148× more contiguous space for lwIP**, from two changes in `boot.py`:
+
+1. Use raw `network`, not `snakeros.board`. Even with lazy imports the latter
+   costs ~10 KB you do not need before WiFi is up.
+2. `gc.threshold(gc.mem_alloc() + gc.mem_free() // 4)` immediately after WiFi
+   and before any heavy import, so the GC collects instead of growing.
+
+Diagnose with:
+
+```python
+import esp32
+print(esp32.idf_heap_info(esp32.HEAP_DATA)[-1])   # (total, free, largest, min)
+```
+
+`largest` is the number that matters — lwIP needs a contiguous block.
+
+See [`examples/qwiicbot/boot.py`](https://github.com/kevinmcaleer/snakeros/blob/main/examples/qwiicbot/boot.py).
+
 ## Leaks and fragmentation: 30-minute soak
 
 Heap exhaustion fails loudly. **Fragmentation does not** — it degrades slowly

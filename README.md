@@ -77,7 +77,8 @@ unmodified micro-ROS Agent** with `ros2 topic echo`, `ros2 service call` and
 | Runs on 32-bit ARM under a 190 KB heap | ✅ 113 KB free with every pack imported |
 | Core on bare-metal ARM Cortex-M3 | ✅ frozen firmware, no OS |
 | 30-minute soak (leaks/fragmentation) | ✅ ~60,000 msgs, ~1 KB drift, stable |
-| **Physical silicon** | ⚠️ **never run** — [checklist](docs/bringup.md) |
+| Generic ESP32 + WiFi | ⚠️ **runs, but tight** — needs the [boot.py pattern](examples/qwiicbot/boot.py) |
+| **Pico 2 W / Pico W** | ⚠️ **not yet run** — [checklist](docs/bringup.md) |
 
 Everything above is tested on the MicroPython **Unix port** against a real
 Agent, which exercises the whole protocol stack. It has not yet been run on a
