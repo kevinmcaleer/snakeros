@@ -105,6 +105,41 @@ $ docker run -it --rm -p 8888:8888/udp microros/micro-ros-agent:jazzy udp4 --por
 $ make rig-up && make test
 ```
 
+## Demo: the QwiicBot
+
+[**examples/qwiicbot**](examples/qwiicbot/) — a [SMARS](https://www.kevsrobots.com/blog/smars.html)
+tracked robot whose entire electronics stack is Arduino Modulino modules,
+joined to a ROS 2 graph by SnakeROS. Five modules, five senses, five ROS
+interfaces — and nothing wired, soldered or bridged:
+
+| Sense | Modulino | ROS 2 |
+|---|---|---|
+| Move | Motors | subscribes `/cmd_vel` |
+| See | Distance | publishes `/range` |
+| Measure | Movement (IMU) | publishes `/imu/data` |
+| Show | LED Matrix | subscribes `/face` |
+| Hear/Speak | Buzzer | serves `/beep` |
+
+The hardware layer falls back to simulation, so **it runs on a laptop against
+a real Agent with no robot attached**:
+
+```console
+$ micropython examples/qwiicbot/robot.py 127.0.0.1
+$ ros2 param set /qwiicbot autonomous true
+```
+
+```
+[qwiicbot] wander: wall at 0.12 m -> back
+[qwiicbot] face -> startled
+[qwiicbot] buzzer: alarm
+[qwiicbot] wander: turn -> drive
+```
+
+Other examples: [publisher](examples/publisher.py) ·
+[subscriber](examples/subscriber.py) · [timer](examples/timer.py) ·
+[service](examples/service.py) · [parameters](examples/parameters.py) ·
+[diff-drive robot](examples/diff_drive/)
+
 ## Documentation
 
 [Getting started](docs/index.md) ·
