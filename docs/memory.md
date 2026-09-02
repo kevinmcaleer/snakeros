@@ -189,7 +189,7 @@ subscribes to something chatty.
 | A **reliable** stream | `max_buffered * MTU` ≈ **4.4 KB** at the defaults |
 | A declared parameter | ~120-200 bytes |
 
-The `.mpy` build is **38% of the source size** and cuts the *peak* heap during
+The `.mpy` build is **roughly a third of the source size** and cuts the *peak* heap during
 import by ~32 KB — which is what actually raises `MemoryError` on a board. It
 does **not** reduce steady-state heap. See [Packaging](packaging.md) for the
 measured table.
