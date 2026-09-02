@@ -21,6 +21,10 @@
       "github:kevinmcaleer/snakeros/snakeros/parameters.py"
     ],
     [
+      "snakeros/board.py",
+      "github:kevinmcaleer/snakeros/snakeros/board.py"
+    ],
+    [
       "snakeros/cdr/__init__.py",
       "github:kevinmcaleer/snakeros/snakeros/cdr/__init__.py"
     ],

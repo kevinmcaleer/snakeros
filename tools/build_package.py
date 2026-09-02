@@ -25,6 +25,7 @@ CORE = [
     "snakeros/node.py",
     "snakeros/services.py",
     "snakeros/parameters.py",
+    "snakeros/board.py",
     "snakeros/cdr/__init__.py",
     "snakeros/cdr/writer.py",
     "snakeros/cdr/reader.py",
@@ -116,11 +117,40 @@ def compile_mpy(out_dir):
     return 0
 
 
+def audit():
+    """Every module on disk must appear in some manifest.
+
+    ``board.py`` was added after this file was first written and was silently
+    left out of ``package.json`` -- so ``mip.install`` produced a package that
+    imported fine until the first ``from snakeros.board import ...``, which is
+    what every example and half the docs do. This check exists so that cannot
+    happen again.
+    """
+    listed = set(CORE) | {"snakeros/msg/%s.py" % p
+                          for p in DEFAULT_PACKS + OPTIONAL_PACKS}
+    on_disk = set()
+    for root, _dirs, files in os.walk("snakeros"):
+        for fn in files:
+            if fn.endswith(".py"):
+                on_disk.add(os.path.join(root, fn).replace(os.sep, "/"))
+    missing = sorted(on_disk - listed)
+    if missing:
+        print("ERROR: modules missing from every manifest:", file=sys.stderr)
+        for m in missing:
+            print("  " + m, file=sys.stderr)
+        return 1
+    print("audit:        {} modules, all packaged".format(len(on_disk)))
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--mpy", action="store_true", help="also cross-compile")
     ap.add_argument("--out", default="build/mpy")
     args = ap.parse_args()
+
+    if audit():
+        return 1
 
     version = read_version()
     with open("package.json", "w") as f:
