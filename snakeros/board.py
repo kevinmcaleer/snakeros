@@ -186,12 +186,32 @@ class ResilientNode:
 
 
 def heap_report(label=""):
-    """Print free/allocated heap. The first thing to reach for on a board."""
+    """Print both heaps. The first thing to reach for on a board.
+
+    On ESP32 the Python GC heap is not the whole story: lwIP takes its network
+    buffers from the ESP-IDF heap, and a send fails with ENOMEM when that runs
+    out of *contiguous* space -- while ``gc.mem_free()`` still looks healthy.
+    So report both, and report the largest free block rather than just totals.
+    """
     gc.collect()
     free = gc.mem_free()
     alloc = gc.mem_alloc()
     print("[heap] {:<16} free {:>7,}  alloc {:>7,}  total {:>7,}".format(
         label, free, alloc, free + alloc))
+    try:
+        import esp32
+
+        regions = esp32.idf_heap_info(esp32.HEAP_DATA)
+        total = sum(r[0] for r in regions)
+        idf_free = sum(r[1] for r in regions)
+        largest = max(r[2] for r in regions)
+        print("[idf]  {:<16} free {:>7,}  largest {:>7,}  total {:>7,}".format(
+            label, idf_free, largest, total))
+        if largest < 4096:
+            print("[idf]  WARNING: largest free block is {} bytes -- lwIP needs "
+                  "a contiguous block and sends will fail with ENOMEM".format(largest))
+    except ImportError:
+        pass
     return free
 
 
