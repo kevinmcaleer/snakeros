@@ -118,6 +118,17 @@ class ResilientNode:
                 self._log("connected")
                 return self.node
             except Exception as e:
+                # Tear down whatever was half-built before retrying, or each
+                # attempt leaks a socket. On a board with a small socket table
+                # that turns a transient failure into a permanent one.
+                node = self.__dict__.pop("node", None)
+                if node is not None:
+                    try:
+                        node.destroy()
+                    except Exception:
+                        pass
+                    self.node = None
+                gc.collect()
                 self._log("connect failed:", e, "- retrying in", self._backoff, "s")
                 time.sleep(self._backoff)
                 self._backoff = min(self._backoff * 2, self.max_backoff_s)

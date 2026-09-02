@@ -313,7 +313,25 @@ class Session:
     # -- lifecycle ---------------------------------------------------------
 
     def connect(self, timeout_ms=3000, retries=5):
-        """Perform the CREATE_CLIENT handshake."""
+        """Perform the CREATE_CLIENT handshake.
+
+        Closes the transport on **any** failure. Leaking the socket here is
+        not a tidiness issue: lwIP on an ESP32 allows only a handful of
+        concurrent sockets, so a caller that retries a failed connect
+        exhausts them within a few attempts and every subsequent send fails
+        with ENOMEM -- which looks like a memory problem and is really a
+        descriptor leak.
+        """
+        try:
+            return self._connect(timeout_ms, retries)
+        except Exception:
+            try:
+                self.transport.close()
+            except Exception:
+                pass
+            raise
+
+    def _connect(self, timeout_ms, retries):
         self.transport.open()
         for _ in range(retries):
             w = CDRWriter()

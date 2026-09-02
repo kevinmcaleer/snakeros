@@ -201,9 +201,19 @@ class Node:
         return self._subscriber_entity
 
     def destroy(self):
-        """Tear the node down and close the session."""
+        """Tear the node down and close the session.
+
+        Safe to call on a node whose connect() never completed -- that is the
+        path ResilientNode takes after a failed attempt, and it must release
+        the socket rather than raise.
+        """
         try:
             self._session.close()
+        except Exception:
+            try:
+                self._transport.close()
+            except Exception:
+                pass
         finally:
             self.connected = False
 
