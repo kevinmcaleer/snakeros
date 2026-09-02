@@ -28,6 +28,11 @@ Or on a laptop, with simulated Modulinos and a real Agent::
 
     micropython examples/qwiicbot/robot.py 127.0.0.1
 
+**On a memory-tight board (ESP32, Pico W), do not pass ``ssid``.** The WiFi
+radio needs a large contiguous allocation and will fail with "Wifi Out of
+Memory" if it is started after these imports. Bring WiFi up in ``boot.py``
+first (see ``boot.py`` beside this file), then call ``main(agent=...)``.
+
 **No odometry.** SMARS's N20 gearmotors have no encoders, so there is no
 honest ``/odom`` to publish and none is faked. The IMU gives orientation
 rates; wheel odometry would need encoders the robot does not have.
@@ -36,81 +41,17 @@ rates; wheel odometry would need encoders the robot does not have.
 import sys
 import time
 
-# MicroPython already has "" (the working directory) on sys.path, so an
-# installed SnakeROS -- and hardware.py sitting beside this file on a device --
-# are both importable with no path juggling at all.
-#
-# Do NOT insert "." here. On a device that puts the working directory ahead of
-# /lib, letting a stale or partial snakeros/ shadow the real install. It fails
-# as:
-#
-#     ImportError: no module named 'snakeros.Node'
-#
-# which is confusing, because the shadowing package imports perfectly well and
-# simply defines nothing. The capital N is the tell: a missing *name*. A
-# lowercase 'snakeros.node' would mean a missing *module*.
+sys.path.insert(0, ".")
+sys.path.insert(0, "examples/qwiicbot")
 
-try:
-    from snakeros import Node
-except ImportError:
-    # Distinguish "not installed" from "shadowed by a stale copy" -- the raw
-    # error ("no module named 'snakeros.Node'") suggests neither. Note the
-    # probe must not raise inside its own except clause, or the shadow case
-    # gets swallowed and misreported as "not installed".
-    _sr = None
-    try:
-        import snakeros as _sr
-    except ImportError:
-        pass
-    if _sr is not None:
-        raise ImportError(
-            "SnakeROS imported from %s but has no 'Node'. A stale or empty "
-            "snakeros/ is shadowing your real install -- MicroPython searches "
-            "the working directory before /lib, so the broken copy wins. "
-            "Delete it, then retry. sys.path = %r"
-            % (getattr(_sr, "__file__", "?"), sys.path))
-    raise ImportError(
-        "SnakeROS is not installed. On the device: "
-        "import mip; mip.install('github:kevinmcaleer/snakeros'). "
-        "sys.path = %r" % (sys.path,))
+from snakeros import Node                                          # noqa: E402
 from snakeros.board import ResilientNode, connect_wifi, heap_report, preallocate  # noqa: E402
 from snakeros.msg.geometry_msgs import Twist                       # noqa: E402
 from snakeros.msg.sensor_msgs import Imu, Range                    # noqa: E402
 from snakeros.msg.std_msgs import String                           # noqa: E402
 from snakeros.msg.std_srvs import SetBool, Trigger                 # noqa: E402
 
-def _find_hardware():
-    """Import hardware.py, which must sit beside this file.
-
-    Handles three layouts: a repo checkout (cwd is the repo root), a device
-    with both files in the working directory, and `mpremote run`, where the
-    script arrives on stdin so the working directory is / rather than wherever
-    the file lives.
-    """
-    candidates = ["examples/qwiicbot", "/qwiicbot", "/lib/qwiicbot"]
-    here = globals().get("__file__")
-    if here and "/" in here:
-        candidates.insert(0, here.rsplit("/", 1)[0])
-    for path in candidates:
-        if path not in sys.path:
-            sys.path.insert(0, path)
-        try:
-            return __import__("hardware")
-        except ImportError:
-            sys.path.remove(path)
-    raise ImportError(
-        "hardware.py not found. It must sit beside robot.py -- copy both:\n"
-        "    mpremote fs cp examples/qwiicbot/hardware.py :\n"
-        "    mpremote fs cp examples/qwiicbot/robot.py :\n"
-        "then run it from that directory. Looked in: %r" % (sys.path,))
-
-
-_hw = _find_hardware()
-Buzzer = _hw.Buzzer
-Drive = _hw.Drive
-Face = _hw.Face
-ImuSensor = _hw.Imu
-Rangefinder = _hw.Rangefinder
+from hardware import Buzzer, Drive, Face, Imu as ImuSensor, Rangefinder  # noqa: E402
 
 # Stop if no command arrives within this long. A robot that keeps driving on
 # a stale command after the link drops is the failure that breaks things.
@@ -369,4 +310,6 @@ def main(agent="127.0.0.1", port=8888, ssid=None, password=None, resilient=True)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else "127.0.0.1")
+    # main(sys.argv[1] if len(sys.argv) > 1 else "127.0.0.1")
+    from secret import WIFI_SSID, WIFI_PASSWORD
+    main(agent="192.168.1.137", ssid=WIFI_SSID, password=WIFI_PASSWORD)

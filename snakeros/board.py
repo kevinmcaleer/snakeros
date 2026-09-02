@@ -27,7 +27,26 @@ def connect_wifi(ssid, password, timeout_s=20, hostname=None, verbose=True):
     if network is None:
         raise SnakeROSError("no network module: not running on a WiFi board")
     wlan = network.WLAN(network.STA_IF)
-    wlan.active(True)
+
+    # Bringing up the radio needs a large contiguous allocation for the
+    # network stack's buffers. Reclaim first, and give the ESP32's
+    # "Wifi Out of Memory" a message that says what to actually do -- the
+    # raw OSError points at this line and explains nothing.
+    gc.collect()
+    try:
+        wlan.active(True)
+    except OSError as e:
+        free = gc.mem_free()
+        raise SnakeROSError(
+            "could not start WiFi ({}). Only {} bytes of heap were free.\n"
+            "The radio needs a big contiguous block, so on a memory-tight "
+            "board (ESP32, Pico W) WiFi must come up BEFORE the heavy "
+            "imports, not after.\n"
+            "Put it in boot.py, or connect first and then import:\n"
+            "    from snakeros.board import connect_wifi\n"
+            "    connect_wifi('ssid', 'password')\n"
+            "    from robot import main; main(agent='192.168.1.10')"
+            .format(e, free))
     if hostname is not None:
         try:
             network.hostname(hostname)

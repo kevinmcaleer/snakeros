@@ -47,6 +47,49 @@ Agent parses your datagram, logs it happily at `-v6`, and silently drops it
 because it is looking up a session that does not exist yet. No error, no NACK,
 no log line saying why.
 
+## `OSError: Wifi Out of Memory` (ESP32, Pico W)
+
+Raised by `wlan.active(True)`. The radio needs a **large contiguous
+allocation** for the network stack's buffers, and by the time SnakeROS and its
+message packs are imported there is no such block left — even though the total
+free figure looks adequate.
+
+**WiFi must come up before the heavy imports, not after.** On an ESP32 with
+~178 KB of heap, importing first and connecting afterwards fails reliably.
+
+The fix is `boot.py`, which MicroPython runs before `main.py` and before any of
+your imports — see
+[`examples/qwiicbot/boot.py`](https://github.com/kevinmcaleer/snakeros/blob/main/examples/qwiicbot/boot.py):
+
+```python
+import gc, network, time
+wlan = network.WLAN(network.STA_IF)
+gc.collect()
+wlan.active(True)
+wlan.connect("ssid", "password")
+while not wlan.isconnected():
+    time.sleep(0.25)
+print("WiFi up:", wlan.ifconfig()[0])
+```
+
+Then start the node **without** `ssid=`, so it skips its own WiFi step:
+
+```python
+from robot import main
+main(agent="192.168.1.10")
+```
+
+Interactively, the same ordering works from a fresh soft reset (Ctrl-D):
+
+```python
+from snakeros.board import connect_wifi
+connect_wifi("ssid", "password")     # first, while the heap is empty
+from robot import main               # then the imports
+main(agent="192.168.1.10")
+```
+
+`main(ssid=..., password=...)` is only safe on a board with heap to spare.
+
 ## `ImportError: no module named 'snakeros.Node'`
 
 Note the **capital N**. That is the tell, and it means something quite

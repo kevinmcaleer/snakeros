@@ -60,9 +60,24 @@ Turn on `autonomous` and the console narrates the behaviour:
 
 ## On the real robot
 
+**Bring WiFi up first, in `boot.py`.** The radio needs a large contiguous
+allocation; started after these imports it fails with `Wifi Out of Memory` on
+an ESP32 or a Pico W. Copy `boot.py` to the device, set your SSID and password
+in it, then:
+
 ```python
 from robot import main
-main(agent="192.168.1.10", ssid="my-wifi", password="secret")
+main(agent="192.168.1.10")      # note: no ssid= -- boot.py already did it
+```
+
+`main(ssid=..., password=...)` only works on a board with heap to spare.
+
+Files to copy to the device:
+
+```console
+$ mpremote fs cp examples/qwiicbot/boot.py :
+$ mpremote fs cp examples/qwiicbot/hardware.py :
+$ mpremote fs cp examples/qwiicbot/robot.py :
 ```
 
 ## Parts
