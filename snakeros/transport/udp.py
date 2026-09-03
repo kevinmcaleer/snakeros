@@ -31,12 +31,24 @@ class UDPTransport:
         self.timeout = timeout
         self._sock = None
         self._addr = None
+        self._family = None
         self._rxbuf = None
 
     def open(self):
-        ai = socket.getaddrinfo(self.host, self.port, 0, socket.SOCK_DGRAM)[0]
-        self._addr = ai[-1]
-        self._sock = socket.socket(ai[0], socket.SOCK_DGRAM)
+        # Resolve ONCE and cache. lwIP's getaddrinfo allocates an addrinfo
+        # struct that MicroPython does not always free, so calling it on every
+        # reconnect leaks until it fails with EAI_MEMORY -- surfaced as
+        # "OSError: -203", which reads like a send problem and is really the
+        # resolver running out of memory.
+        #
+        # A board that has retried a connection a few dozen times will hit
+        # this, and a *soft* reboot does not clear it: lwIP keeps its state.
+        # A hard reset does.
+        if self._addr is None:
+            ai = socket.getaddrinfo(self.host, self.port, 0, socket.SOCK_DGRAM)[0]
+            self._addr = ai[-1]
+            self._family = ai[0]
+        self._sock = socket.socket(self._family, socket.SOCK_DGRAM)
         self._rxbuf = bytearray(self.mtu + 64)
         try:
             self._sock.settimeout(self.timeout)
