@@ -93,6 +93,26 @@ def setup_i2c(board="generic_esp32", freq=100000, soft=None):
     return bus
 
 
+# Modulino default I2C addresses, taken from arduino-modulino-mpy rather than
+# from memory -- several are not where you would guess (Motors is 0x48, and
+# Buzzer/LED Matrix are easy to transpose).
+MODULINO_ADDRESSES = {
+    0x29: "Distance",
+    0x3C: "Buzzer",
+    0x48: "Motors",
+    0x6A: "Movement (IMU)",
+    0x6B: "Movement (IMU, alt)",
+    0x6C: "Pixels",
+    0x72: "LED Matrix",
+    0x74: "Knob",
+    0x76: "Knob (alt) / Thermo",
+    0x7C: "Buttons",
+    0x58: "Joystick",
+    0x70: "Vibro",
+    0x04: "Latch Relay",
+}
+
+
 def scan(bus, verbose=True):
     """Scan the bus and name any Modulinos found.
 
@@ -108,5 +128,6 @@ def scan(bus, verbose=True):
             print("        an empty bus, exactly like an unplugged cable.")
         else:
             for a in found:
-                print("[board] found 0x%02X (%d)" % (a, a))
+                print("[board] found 0x%02X  %s"
+                      % (a, MODULINO_ADDRESSES.get(a, "unknown device")))
     return found

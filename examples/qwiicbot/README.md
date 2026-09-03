@@ -92,16 +92,25 @@ its own regulator enabled by **GPIO 2** (`NEOPIXEL_I2C_POWER`). CircuitPython
 and Arduino raise it automatically during board init; **MicroPython does
 not**, so with generic firmware the connector is simply dead.
 
-```python
-from board_setup import setup_i2c, scan
-from hardware import set_i2c
+Just pass `board=` and the demo handles it:
 
-i2c = setup_i2c("feather_esp32_v2")   # powers GPIO 2, SoftI2C on sda=22 scl=20
-scan(i2c)                             # confirm the Modulinos appear
-set_i2c(i2c)                          # every driver now uses this bus
+```python
+from robot_minimal import main
+main(agent="192.168.1.149", board="feather_esp32_v2")
 ```
 
-Then start the robot as usual. `board_setup.py` also knows `generic_esp32` and
+It powers the rail, scans, names what it found, and points the drivers at the
+right bus:
+
+```
+[board] I2C power enabled on GPIO 2
+[board] SoftI2C on sda=22 scl=20
+[board] found 0x48  Motors
+[board] found 0x29  Distance
+[board] found 0x6A  Movement (IMU)
+[board] found 0x3C  Buzzer
+[board] found 0x72  LED Matrix
+``` `board_setup.py` also knows `generic_esp32` and
 `pico`; add your own to `BOARDS` as `(power_pin, sda, scl, active_high)`.
 
 Two notes specific to the Feather V2: its SCL is **GPIO 20**, which

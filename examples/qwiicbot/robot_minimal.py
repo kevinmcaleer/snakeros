@@ -73,7 +73,20 @@ def _report_version():
               "files -- re-copy build/mpy/snakeros to :lib/")
 
 
-def main(agent="127.0.0.1", port=8888, mtu=256):
+def main(agent="127.0.0.1", port=8888, mtu=256, board=None):
+    """Run the cut-down robot.
+
+    ``board`` names an entry in board_setup.BOARDS -- needed on boards whose
+    Qwiic connector is behind a power gate, such as "feather_esp32_v2".
+    """
+    if board:
+        from board_setup import setup_i2c, scan
+        from hardware import set_i2c
+
+        bus = setup_i2c(board)
+        scan(bus)
+        set_i2c(bus)
+
     _report_version()
     gc.collect()
     print("[minimal] python heap free:", gc.mem_free())

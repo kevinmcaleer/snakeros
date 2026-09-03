@@ -279,9 +279,25 @@ def _report_version():
               "files -- re-copy build/mpy/snakeros to :lib/")
 
 
-def main(agent="127.0.0.1", port=8888, ssid=None, password=None, resilient=True):
+def main(agent="127.0.0.1", port=8888, ssid=None, password=None,
+         resilient=True, board=None):
+    """Run the robot.
+
+    ``board`` names an entry in board_setup.BOARDS -- pass it on any board
+    whose Qwiic connector is behind a power gate or is not on MicroPython's
+    default I2C pins. "feather_esp32_v2" is the common case: its STEMMA QT
+    port has its own regulator on GPIO 2 that MicroPython does not raise.
+    """
     if ssid:
         connect_wifi(ssid, password, hostname="qwiicbot")
+
+    if board:
+        from board_setup import setup_i2c, scan
+        from hardware import set_i2c
+
+        bus = setup_i2c(board)
+        scan(bus)
+        set_i2c(bus)
 
     from hardware import modulinos_present
 
