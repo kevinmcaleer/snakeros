@@ -80,6 +80,35 @@ $ mpremote fs cp examples/qwiicbot/hardware.py :
 $ mpremote fs cp examples/qwiicbot/robot.py :
 ```
 
+## Boards that gate Qwiic power
+
+Some boards put their Qwiic / STEMMA QT connector behind a **GPIO-controlled
+regulator**, so the modules are unpowered until you raise that pin. The
+symptom looks exactly like a hardware fault: no LEDs on the modules, an empty
+`i2c.scan()`, and I2C errors.
+
+The **Adafruit ESP32 Feather V2** is the notable one. Its STEMMA QT port has
+its own regulator enabled by **GPIO 2** (`NEOPIXEL_I2C_POWER`). CircuitPython
+and Arduino raise it automatically during board init; **MicroPython does
+not**, so with generic firmware the connector is simply dead.
+
+```python
+from board_setup import setup_i2c, scan
+from hardware import set_i2c
+
+i2c = setup_i2c("feather_esp32_v2")   # powers GPIO 2, SoftI2C on sda=22 scl=20
+scan(i2c)                             # confirm the Modulinos appear
+set_i2c(i2c)                          # every driver now uses this bus
+```
+
+Then start the robot as usual. `board_setup.py` also knows `generic_esp32` and
+`pico`; add your own to `BOARDS` as `(power_pin, sda, scl, active_high)`.
+
+Two notes specific to the Feather V2: its SCL is **GPIO 20**, which
+MicroPython's hardware I2C peripheral will not accept, so `setup_i2c` uses
+`SoftI2C` there. And the power gate exists for a reason — dropping that pin
+low cuts the modules' draw for deep sleep.
+
 ## If the board runs out of memory
 
 A plain ESP32 with WiFi is the tightest target this has been run on. If sends

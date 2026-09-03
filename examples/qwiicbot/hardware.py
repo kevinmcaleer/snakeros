@@ -38,6 +38,38 @@ import time
 
 _LOADED = {}
 
+# A caller-supplied I2C bus, for boards whose Qwiic pins are not MicroPython's
+# defaults or whose connector is behind a power gate. See board_setup.py.
+_I2C = None
+
+
+def set_i2c(bus):
+    """Use ``bus`` for every Modulino created from now on.
+
+    Call before constructing any wrapper::
+
+        from board_setup import setup_i2c
+        from hardware import set_i2c
+        set_i2c(setup_i2c("feather_esp32_v2"))
+    """
+    global _I2C
+    _I2C = bus
+
+
+def _make(name, **kw):
+    """Construct a Modulino driver, passing the shared bus if one was set."""
+    cls = _driver(name)
+    if cls is None:
+        return None
+    if _I2C is not None:
+        kw["i2c_bus"] = _I2C
+    try:
+        return cls(**kw)
+    except Exception as e:
+        print("[hardware] %s failed to initialise (%s) -- simulating it"
+              % (name, e))
+        return None
+
 
 def _driver(name):
     """Return a Modulino class, or None if it is unavailable."""
@@ -75,9 +107,8 @@ class Drive:
         self.left = 0.0
         self.right = 0.0
         self._m = None
-        cls = _driver("ModulinoMotors")
-        if cls is not None:
-            self._m = cls()
+        self._m = _make("ModulinoMotors")
+        if self._m is not None:
             self._m.stepper_mode_enabled = False
 
     def set(self, left, right):
@@ -129,8 +160,7 @@ class Rangefinder:
     MAX_M = 2.0
 
     def __init__(self, drive=None):
-        cls = _driver("ModulinoDistance")
-        self._d = cls() if cls is not None else None
+        self._d = _make("ModulinoDistance")
         self._drive = drive
         self._sim_m = 1.2
 
@@ -155,8 +185,7 @@ class Imu:
     """Modulino Movement -- a 6-axis IMU."""
 
     def __init__(self):
-        cls = _driver("ModulinoMovement")
-        self._m = cls() if cls is not None else None
+        self._m = _make("ModulinoMovement")
         self._t0 = time.time()
 
     def read(self):
@@ -177,8 +206,7 @@ class Buzzer:
     """Modulino Buzzer."""
 
     def __init__(self):
-        cls = _driver("ModulinoBuzzer")
-        self._b = cls() if cls is not None else None
+        self._b = _make("ModulinoBuzzer")
         self.last = None
 
     def tone(self, frequency, ms=120):
@@ -217,8 +245,7 @@ class Face:
     }
 
     def __init__(self):
-        cls = _driver("ModulinoLEDMatrix")
-        self._m = cls(use_grayscale=False) if cls is not None else None
+        self._m = _make("ModulinoLEDMatrix", use_grayscale=False)
         self.current = None
         self.show("happy")
 

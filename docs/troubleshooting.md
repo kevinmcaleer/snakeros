@@ -47,6 +47,47 @@ Agent parses your datagram, logs it happily at `-v6`, and silently drops it
 because it is looking up a session that does not exist yet. No error, no NACK,
 no log line saying why.
 
+## Qwiic / STEMMA QT modules show no power
+
+An empty `i2c.scan()`, no LEDs on the modules, and I2C errors — on a board
+where the wiring is obviously fine.
+
+**Some boards gate the Qwiic rail behind a GPIO.** The connector has its own
+regulator, and it is off until a pin is raised. CircuitPython and Arduino do
+this during board init; **MicroPython generally does not**, so generic
+firmware leaves the port dead. It presents identically to a broken cable or a
+faulty board.
+
+| Board | Enable pin | SDA | SCL |
+|---|---|---|---|
+| Adafruit ESP32 Feather V2 | **GPIO 2** (`NEOPIXEL_I2C_POWER`) | 22 | 20 |
+| Most generic ESP32 | none | 21 | 22 |
+
+```python
+from machine import Pin, SoftI2C
+import time
+
+Pin(2, Pin.OUT).value(1)      # enable the STEMMA QT regulator
+time.sleep_ms(100)            # let the rail settle
+i2c = SoftI2C(scl=Pin(20), sda=Pin(22), freq=100000)
+print([hex(a) for a in i2c.scan()])
+```
+
+On the Feather V2 note also that **SCL is GPIO 20, which MicroPython's
+hardware `I2C` will not accept** — use `SoftI2C`.
+
+`examples/qwiicbot/board_setup.py` wraps this up:
+
+```python
+from board_setup import setup_i2c, scan
+from hardware import set_i2c
+i2c = setup_i2c("feather_esp32_v2"); scan(i2c); set_i2c(i2c)
+```
+
+**Before concluding a board is faulty**, check its pinout for an I2C or
+STEMMA power-enable pin. It is a low-power feature, not a defect, and it is
+easy to miss because Arduino and CircuitPython hide it.
+
 ## `OSError: [Errno 12] ENOMEM` on send (ESP32)
 
 Sends fail even though `gc.mem_free()` looks healthy. That is because **ESP32
