@@ -263,10 +263,10 @@ def main(agent="127.0.0.1", port=8888, ssid=None, password=None, resilient=True)
     if ssid:
         connect_wifi(ssid, password, hostname="qwiicbot")
 
-    from hardware import HAVE_MODULINO
+    from hardware import modulinos_present
 
     version_report()
-    print("[qwiicbot] Modulinos present:", HAVE_MODULINO)
+    print("[qwiicbot] Modulinos present:", modulinos_present())
     heap_report("before node")
 
     bot = {}
