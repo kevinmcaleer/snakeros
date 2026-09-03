@@ -40,7 +40,8 @@ sys.path.insert(0, ".")
 sys.path.insert(0, "examples/qwiicbot")
 
 from snakeros import Node                                          # noqa: E402
-from snakeros.board import ResilientNode, connect_wifi, heap_report, preallocate  # noqa: E402
+from snakeros.board import (ResilientNode, connect_wifi, heap_report,
+                            preallocate, version_report)  # noqa: E402
 from snakeros.msg.geometry_msgs import Twist                       # noqa: E402
 from snakeros.msg.sensor_msgs import Imu, Range                    # noqa: E402
 from snakeros.msg.std_msgs import String                           # noqa: E402
@@ -264,6 +265,7 @@ def main(agent="127.0.0.1", port=8888, ssid=None, password=None, resilient=True)
 
     from hardware import HAVE_MODULINO
 
+    version_report()
     print("[qwiicbot] Modulinos present:", HAVE_MODULINO)
     heap_report("before node")
 

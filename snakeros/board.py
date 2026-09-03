@@ -188,6 +188,22 @@ class ResilientNode:
             pass
 
 
+def version_report():
+    """Print the installed SnakeROS version.
+
+    Worth calling at startup: when a board misbehaves, the first question is
+    always which version is actually on it, and 'the one I just copied' is
+    frequently wrong.
+    """
+    try:
+        import snakeros
+
+        print("[snakeros] version", snakeros.__version__)
+        return snakeros.__version__
+    except Exception:
+        return None
+
+
 def heap_report(label=""):
     """Print both heaps. The first thing to reach for on a board.
 

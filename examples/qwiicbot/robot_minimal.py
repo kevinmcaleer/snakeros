@@ -54,6 +54,8 @@ WHEEL_SEPARATION = 0.09
 
 
 def main(agent="127.0.0.1", port=8888, mtu=256):
+    from snakeros.board import version_report
+    version_report()
     gc.collect()
     print("[minimal] python heap free:", gc.mem_free())
     try:

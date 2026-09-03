@@ -15,7 +15,7 @@ couple of KB rather than the whole library, and ``from snakeros import Node``
 pulls the core in only when you actually ask for it.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 # name -> submodule it lives in
 _LAZY = {
