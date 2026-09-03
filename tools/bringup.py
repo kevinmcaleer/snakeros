@@ -42,7 +42,36 @@ def main(ssid=None, password=None, agent="192.168.1.10", port=8888):
         print("   NOTE: under 100 KB of heap. Import only the message packs")
         print("         you need, and consider installing the .mpy build.")
 
-    # 2. import
+    # 2. shadowing check -- before anything else, because a stale copy makes
+    #    every later symptom lie about its cause
+    print("\n-- install --")
+    try:
+        import os as _os
+        import sys as _sys
+
+        found = []
+        for entry in _sys.path:
+            d = (entry or ".") + "/snakeros"
+            try:
+                _os.stat(d)
+                found.append(d)
+            except OSError:
+                pass
+        if len(found) > 1:
+            _bad("snakeros found in {} places: {}".format(len(found), found))
+            print("        The first on sys.path wins, and MicroPython searches")
+            print("        the working directory BEFORE /lib. Delete the stale")
+            print("        copy -- a partial one silently overrides a good one.")
+            fails += 1
+        elif found:
+            _ok("single install at {}".format(found[0]))
+        else:
+            _bad("snakeros not found on sys.path: {}".format(_sys.path))
+            return 1
+    except Exception as e:
+        print("   (could not check for shadowing: {})".format(e))
+
+    # 10. import
     print("\n-- import --")
     try:
         import snakeros
