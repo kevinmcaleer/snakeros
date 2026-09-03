@@ -129,7 +129,10 @@ class ResilientNode:
                         pass
                     self.node = None
                 gc.collect()
-                self._log("connect failed:", e, "- retrying in", self._backoff, "s")
+                # Include the type. A bare OSError prints as its errno
+                # ("-203"), which tells you nothing about which layer failed.
+                self._log("connect failed: {}: {} - retrying in {} s".format(
+                    type(e).__name__, e, self._backoff))
                 time.sleep(self._backoff)
                 self._backoff = min(self._backoff * 2, self.max_backoff_s)
 

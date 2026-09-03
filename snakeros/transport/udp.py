@@ -58,7 +58,14 @@ class UDPTransport:
         try:
             return self._sock.sendto(data, self._addr)
         except OSError as e:
-            raise TransportError("send failed: {}".format(e))
+            # Name the destination. On a board, errno alone ("ENOMEM", "-203")
+            # is routinely a *reachability* problem rather than a local one:
+            # lwIP surfaces a queued-ARP failure as ENOMEM, and an ICMP
+            # port-unreachable from a host with nothing listening as an errno
+            # on the next send.
+            raise TransportError(
+                "send to {}:{} failed: {} (is the micro-ROS Agent running "
+                "and reachable there?)".format(self.host, self.port, e))
 
     def recv(self):
         """Return one datagram, or ``None`` if nothing arrived in time.
