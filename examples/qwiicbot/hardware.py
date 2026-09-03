@@ -24,18 +24,41 @@ speed 0-100 + flag   signed -1.0..1.0   sign -> invert_x
 import math
 import time
 
-try:
-    from modulino import (
-        ModulinoBuzzer,
-        ModulinoDistance,
-        ModulinoLEDMatrix,
-        ModulinoMotors,
-        ModulinoMovement,
-    )
+# Import each driver separately. Arduino's package __init__ eagerly loads all
+# seventeen drivers (~131 KB of source), which on an ESP32 with SnakeROS
+# already resident raises MemoryError -- see modulino_lazy_init.py for a
+# drop-in that fixes that. Importing one at a time also means a module that is
+# missing or fails to load costs you that sense, not the whole robot: no LED
+# matrix is a robot without a face, not a robot that will not start.
+ModulinoMotors = ModulinoDistance = ModulinoMovement = None
+ModulinoBuzzer = ModulinoLEDMatrix = None
 
-    HAVE_MODULINO = True
-except ImportError:
-    HAVE_MODULINO = False
+
+def _load(name):
+    try:
+        module = __import__("modulino", None, None, (name,))
+        return getattr(module, name)
+    except (ImportError, MemoryError, AttributeError) as e:
+        print("[hardware] %s unavailable (%s) -- simulating it"
+              % (name, type(e).__name__))
+        return None
+
+
+try:
+    import modulino  # noqa: F401
+    _PRESENT = True
+except (ImportError, MemoryError):
+    _PRESENT = False
+
+if _PRESENT:
+    ModulinoMotors = _load("ModulinoMotors")
+    ModulinoDistance = _load("ModulinoDistance")
+    ModulinoMovement = _load("ModulinoMovement")
+    ModulinoBuzzer = _load("ModulinoBuzzer")
+    ModulinoLEDMatrix = _load("ModulinoLEDMatrix")
+
+# True only if the drive and sense modules that matter actually loaded.
+HAVE_MODULINO = ModulinoMotors is not None
 
 G_TO_MS2 = 9.80665
 DPS_TO_RADS = math.pi / 180.0
@@ -53,7 +76,7 @@ class Drive:
         self.left = 0.0
         self.right = 0.0
         self._m = None
-        if HAVE_MODULINO:
+        if ModulinoMotors is not None:
             self._m = ModulinoMotors()
             self._m.stepper_mode_enabled = False
 
@@ -106,7 +129,7 @@ class Rangefinder:
     MAX_M = 2.0
 
     def __init__(self, drive=None):
-        self._d = ModulinoDistance() if HAVE_MODULINO else None
+        self._d = ModulinoDistance() if ModulinoDistance is not None else None
         self._drive = drive
         self._sim_m = 1.2
 
@@ -131,7 +154,7 @@ class Imu:
     """Modulino Movement -- a 6-axis IMU."""
 
     def __init__(self):
-        self._m = ModulinoMovement() if HAVE_MODULINO else None
+        self._m = ModulinoMovement() if ModulinoMovement is not None else None
         self._t0 = time.time()
 
     def read(self):
@@ -152,7 +175,7 @@ class Buzzer:
     """Modulino Buzzer."""
 
     def __init__(self):
-        self._b = ModulinoBuzzer() if HAVE_MODULINO else None
+        self._b = ModulinoBuzzer() if ModulinoBuzzer is not None else None
         self.last = None
 
     def tone(self, frequency, ms=120):
@@ -191,7 +214,8 @@ class Face:
     }
 
     def __init__(self):
-        self._m = ModulinoLEDMatrix(use_grayscale=False) if HAVE_MODULINO else None
+        self._m = (ModulinoLEDMatrix(use_grayscale=False)
+                   if ModulinoLEDMatrix is not None else None)
         self.current = None
         self.show("happy")
 

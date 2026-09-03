@@ -52,6 +52,7 @@ from hardware import Buzzer, Drive, Face, Imu as ImuSensor, Rangefinder  # noqa:
 # a stale command after the link drops is the failure that breaks things.
 CMD_TIMEOUT_S = 0.6
 
+print("Starting QwiiicBot")
 
 class QwiicBot:
     def __init__(self, node):

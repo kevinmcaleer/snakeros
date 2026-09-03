@@ -45,7 +45,28 @@ class UDPTransport:
         # this, and a *soft* reboot does not clear it: lwIP keeps its state.
         # A hard reset does.
         if self._addr is None:
-            ai = socket.getaddrinfo(self.host, self.port, 0, socket.SOCK_DGRAM)[0]
+            try:
+                ai = socket.getaddrinfo(
+                    self.host, self.port, 0, socket.SOCK_DGRAM)[0]
+            except OSError as e:
+                # getaddrinfo errors live in their own negative namespace and
+                # are not errno values, so the bare number is meaningless:
+                #   -200 EAI_NONAME  -201 EAI_SERVICE
+                #   -202 EAI_FAIL    -203 EAI_MEMORY  -204 EAI_FAMILY
+                code = e.args[0] if e.args else None
+                hint = {
+                    -200: "no such host",
+                    -201: "bad service/port",
+                    -202: "name resolution failed -- is the address right? "
+                          "(a malformed IP such as 192.168.1.1249 is treated "
+                          "as a hostname and fails here)",
+                    -203: "resolver out of memory -- a hard reset clears it, "
+                          "a soft reboot does not",
+                    -204: "unsupported address family",
+                }.get(code, "unknown resolver error")
+                raise TransportError(
+                    "could not resolve Agent address {!r}: {} ({})".format(
+                        self.host, hint, code))
             self._addr = ai[-1]
             self._family = ai[0]
         self._sock = socket.socket(self._family, socket.SOCK_DGRAM)
