@@ -53,9 +53,28 @@ MAX_SPEED = 0.6
 WHEEL_SEPARATION = 0.09
 
 
+def _report_version():
+    """Print the SnakeROS version, tolerating an older install.
+
+    Deliberately defensive: a diagnostic must never be the thing that stops a
+    robot starting. If the library on the device predates this helper, say so
+    -- that mismatch is itself the most useful thing to know.
+    """
+    try:
+        import snakeros
+
+        print("[snakeros] version", getattr(snakeros, "__version__", "?"))
+    except Exception as e:
+        print("[snakeros] version unknown:", e)
+    try:
+        from snakeros.board import version_report  # noqa: F401
+    except ImportError:
+        print("[snakeros] NOTE: lib/snakeros is older than these example "
+              "files -- re-copy build/mpy/snakeros to :lib/")
+
+
 def main(agent="127.0.0.1", port=8888, mtu=256):
-    from snakeros.board import version_report
-    version_report()
+    _report_version()
     gc.collect()
     print("[minimal] python heap free:", gc.mem_free())
     try:

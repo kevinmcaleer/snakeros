@@ -41,7 +41,7 @@ sys.path.insert(0, "examples/qwiicbot")
 
 from snakeros import Node                                          # noqa: E402
 from snakeros.board import (ResilientNode, connect_wifi, heap_report,
-                            preallocate, version_report)  # noqa: E402
+                            preallocate)  # noqa: E402
 from snakeros.msg.geometry_msgs import Twist                       # noqa: E402
 from snakeros.msg.sensor_msgs import Imu, Range                    # noqa: E402
 from snakeros.msg.std_msgs import String                           # noqa: E402
@@ -259,13 +259,33 @@ class QwiicBot:
         self.pub_imu.publish(m)
 
 
+def _report_version():
+    """Print the SnakeROS version, tolerating an older install.
+
+    Deliberately defensive: a diagnostic must never be the thing that stops a
+    robot starting. If the library on the device predates this helper, say so
+    -- that mismatch is itself the most useful thing to know.
+    """
+    try:
+        import snakeros
+
+        print("[snakeros] version", getattr(snakeros, "__version__", "?"))
+    except Exception as e:
+        print("[snakeros] version unknown:", e)
+    try:
+        from snakeros.board import version_report  # noqa: F401
+    except ImportError:
+        print("[snakeros] NOTE: lib/snakeros is older than these example "
+              "files -- re-copy build/mpy/snakeros to :lib/")
+
+
 def main(agent="127.0.0.1", port=8888, ssid=None, password=None, resilient=True):
     if ssid:
         connect_wifi(ssid, password, hostname="qwiicbot")
 
     from hardware import modulinos_present
 
-    version_report()
+    _report_version()
     print("[qwiicbot] Modulinos present:", modulinos_present())
     heap_report("before node")
 
