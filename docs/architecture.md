@@ -11,12 +11,9 @@ the client on the other end of the wire is C, Rust or Python — only that the
 bytes are right. So SnakeROS ships *no host-side software at all*: no bridge,
 no relay node, nothing to install beside your ROS 2 system.
 
-```
-┌──────────────────┐         ┌───────────────────┐         ┌─────────────┐
-│  MicroPython     │  XRCE   │  micro-ROS Agent  │  DDS    │  ROS 2      │
-│  board           │ ──────► │  (stock, unmod'd) │ ──────► │  graph      │
-│  + snakeros      │  UDP /  │                   │         │             │
-└──────────────────┘  serial └───────────────────┘         └─────────────┘
+```mermaid
+graph LR
+  "MicroPython board + SnakeROS" --XRCE--> "micro-ROS Agent" --DDS--> "ROS 2 graph"
 ```
 
 ## Why a pure-Python client is even possible
