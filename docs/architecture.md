@@ -13,9 +13,7 @@ no relay node, nothing to install beside your ROS 2 system.
 
 ```mermaid
 graph LR
-
-  "MicroPython board + SnakeROS" --XRCE--> "micro-ROS Agent" --DDS--> "ROS 2 graph"
-
+  A["MicroPython board + SnakeROS"] --XRCE--> B["micro-ROS Agent"] --DDS--> C["ROS 2 graph"]
 ```
 
 ## Why a pure-Python client is even possible
