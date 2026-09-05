@@ -32,12 +32,10 @@ Python, to the **stock micro-ROS Agent**. The Agent doesn't care what's on the
 other end of the wire — so there is no bridge to run, no relay node to write,
 and no host-side software of ours at all.
 
-```
-┌──────────────────┐         ┌───────────────────┐         ┌─────────────┐
-│  MicroPython     │  XRCE   │  micro-ROS Agent  │  DDS    │  ROS 2      │
-│  board           │ ──────► │  (stock, unmod'd) │ ──────► │  graph      │
-│  + snakeros      │  UDP /  │                   │         │             │
-└──────────────────┘  serial └───────────────────┘         └─────────────┘
+```mermaid
+flowchart LR
+    board["MicroPython board<br/>+ snakeros"] -->|XRCE<br/>UDP / serial| agent["micro-ROS Agent<br/>(stock, unmod'd)"]
+    agent -->|DDS| graph["ROS 2 graph"]
 ```
 
 XRCE creates its entities from **XML strings sent at runtime**, which is the
