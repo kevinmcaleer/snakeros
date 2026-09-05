@@ -11,12 +11,10 @@ the client on the other end of the wire is C, Rust or Python — only that the
 bytes are right. So SnakeROS ships *no host-side software at all*: no bridge,
 no relay node, nothing to install beside your ROS 2 system.
 
-```
-┌──────────────────┐         ┌───────────────────┐         ┌─────────────┐
-│  MicroPython     │  XRCE   │  micro-ROS Agent  │  DDS    │  ROS 2      │
-│  board           │ ──────► │  (stock, unmod'd) │ ──────► │  graph      │
-│  + snakeros      │  UDP /  │                   │         │             │
-└──────────────────┘  serial └───────────────────┘         └─────────────┘
+```mermaid
+flowchart LR
+    board["MicroPython board<br/>+ snakeros"] -->|XRCE<br/>UDP / serial| agent["micro-ROS Agent<br/>(stock, unmod'd)"]
+    agent -->|DDS| graph["ROS 2 graph"]
 ```
 
 ## Why a pure-Python client is even possible
@@ -187,11 +185,12 @@ already running your ROS 2 nodes.
 
 ### A Raspberry Pi, or any Linux ROS 2 machine
 
-```
-Raspberry Pi
-┌────────────────────────────────────────┐
-│  ros2 nodes  ◄──DDS──►  micro_ros_agent│ ◄──XRCE/WiFi──  Pico + SnakeROS
-└────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    pico["Pico + SnakeROS"] -->|XRCE/WiFi| agent["micro_ros_agent"]
+    subgraph pi["Raspberry Pi"]
+        nodes["ros2 nodes"] <--> |DDS| agent
+    end
 ```
 
 No extra hardware, no extra network hop, and nothing of SnakeROS's on the Pi.
@@ -206,13 +205,19 @@ STM32U585) and
 (Dragonwing IQ8 + STM32H5) — are an interesting case, because both halves live
 in one box:
 
-```
-┌─────────────────────────────────────────────────────┐
-│  Linux MPU                     │  real-time MCU     │
-│  ros2 nodes + micro_ros_agent  │◄─┤ SnakeROS        │
-│  perception, planning          │  │ motors, CAN-FD  │
-└─────────────────────────────────────────────────────┘
-                                  internal serial link
+```mermaid
+flowchart LR
+    subgraph board["Dual-brain board"]
+        subgraph linux["Linux MPU"]
+            host["ros2 nodes + micro_ros_agent"]
+            host_work["perception, planning"]
+        end
+        subgraph mcu["real-time MCU"]
+            snake["SnakeROS"]
+            mcu_work["motors, CAN-FD"]
+        end
+    end
+    snake -->|internal serial link| host
 ```
 
 **Do not use SnakeROS on the Linux half.** It is a full computer — run `rclpy`
