@@ -1,0 +1,106 @@
+<?xml version="1.0"?>
+<!-- New robot — add links/joints, or import meshes from the Assembly panel. -->
+<robot name="my_robot">
+  <material name="steel"><color rgba="0.62 0.65 0.69 1"/></material>
+  <link name="base_link">
+    <visual>
+      <geometry><box size="0.08 0.08 0.02"/></geometry>
+      <material name="steel"/>
+    </visual>
+  </link>
+  <link name="Modulino_LED_Matrix">
+    <visual>
+      <origin xyz="0 0 0.006" rpy="0 0 0"/>
+      <geometry><box size="0.041 0.0236 0.012"/></geometry>
+      <material name="Modulino_LED_Matrix_placeholder"><color rgba="0.235 0.412 0.308 1"/></material>
+    </visual>
+  </link>
+  <joint name="Modulino_LED_Matrix_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="Modulino_LED_Matrix"/>
+    <origin xyz="0.08 0 0" rpy="0 0 0"/>
+  </joint>
+  <link name="Modulino_Buzzer">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.0042"/>
+      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
+    </inertial>
+    <visual>
+      <geometry><mesh filename="meshes/modulino.stl" scale="0.001 0.001 0.001"/></geometry>
+    </visual>
+  </link>
+  <joint name="Modulino_Buzzer_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="Modulino_Buzzer"/>
+    <origin xyz="0.16 0 0" rpy="0 0 0"/>
+  </joint>
+  <link name="Modulino_Distance">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.0041"/>
+      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
+    </inertial>
+    <visual>
+      <geometry><mesh filename="meshes/modulino-1.stl" scale="0.001 0.001 0.001"/></geometry>
+    </visual>
+  </link>
+  <joint name="Modulino_Distance_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="Modulino_Distance"/>
+    <origin xyz="0.24 0 0" rpy="0 0 0"/>
+  </joint>
+  <link name="Modulino_Motors">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.0044"/>
+      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
+    </inertial>
+    <visual>
+      <geometry><mesh filename="meshes/modulino-2.stl" scale="0.001 0.001 0.001"/></geometry>
+    </visual>
+  </link>
+  <joint name="Modulino_Motors_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="Modulino_Motors"/>
+    <origin xyz="0.32 0 0" rpy="0 0 0"/>
+  </joint>
+  <link name="Modulino_Movement">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.0039"/>
+      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
+    </inertial>
+    <visual>
+      <geometry><mesh filename="meshes/modulino-3.stl" scale="0.001 0.001 0.001"/></geometry>
+    </visual>
+  </link>
+  <joint name="Modulino_Movement_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="Modulino_Movement"/>
+    <origin xyz="0.4 0 0" rpy="0 0 0"/>
+  </joint>
+  <link name="Cytron_Maker_Pi_RP2040">
+    <visual>
+      <origin xyz="-0.04389 -0.031972 0" rpy="0 0 0"/>
+      <geometry><mesh filename="meshes/maker-pi-rp2040-pcba.stl" scale="0.001 0.001 0.001"/></geometry>
+    </visual>
+  </link>
+  <joint name="Cytron_Maker_Pi_RP2040_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="Cytron_Maker_Pi_RP2040"/>
+    <origin xyz="0.018 -0.057 0" rpy="0 0 0"/>
+  </joint>
+  <link name="LiPo_1S_3_7_V">
+    <visual>
+      <origin xyz="0 0 0.0075" rpy="0 0 0"/>
+      <geometry><box size="0.0467 0.0615 0.015"/></geometry>
+      <material name="LiPo_1S_3_7_V_placeholder"><color rgba="0.336 0.292 0.351 1"/></material>
+    </visual>
+  </link>
+  <joint name="LiPo_1S_3_7_V_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="LiPo_1S_3_7_V"/>
+    <origin xyz="0.56 0 0" rpy="0 0 0"/>
+  </joint>
+</robot>

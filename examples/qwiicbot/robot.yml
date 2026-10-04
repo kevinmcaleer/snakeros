@@ -1,0 +1,159 @@
+board: adafruit-feather-esp32-v2
+boardX: -118.12352520325203
+boardY: 7.219382113821133
+robot:
+  urdf: robot.urdf
+  version: 1
+  boardLink: Cytron_Maker_Pi_RP2040
+parts:
+  - id: modulino-led-matrix
+    lib: my-parts
+    part: modulino-led-matrix
+    label: Modulino LED Matrix
+    x: 543.9121951219512
+    y: 45.97154471544715
+    urdfLink: Modulino_LED_Matrix
+  - id: modulino-buzzer
+    lib: snakie-standard
+    part: modulino-buzzer
+    label: Modulino Buzzer
+    x: 882.6748341265475
+    y: 85.88319797465807
+    urdfLink: Modulino_Buzzer
+  - id: modulino-distance
+    lib: snakie-standard
+    part: modulino-distance
+    label: Modulino Distance
+    x: 418.35772357723573
+    y: 364.71869918699184
+    urdfLink: Modulino_Distance
+  - id: modulino-motors
+    lib: snakie-standard
+    part: modulino-motors
+    label: Modulino Motors
+    x: 883.9737772502799
+    y: 354.08629567391205
+    urdfLink: Modulino_Motors
+  - id: modulino-movement
+    lib: snakie-standard
+    part: modulino-movement
+    label: Modulino Movement
+    x: 347.2730236220473
+    y: 659.6141732283464
+    urdfLink: Modulino_Movement
+  - id: battery-lipo-1s
+    lib: snakie-standard
+    part: battery-lipo-1s
+    label: LiPo 1S (3.7 V)
+    x: 130.62207315000722
+    y: -16.456724122173767
+    urdfLink: LiPo_1S_3_7_V
+connections:
+  - id: modulino-led-matrix.GND#14__modulino-buzzer.GND#12
+    from: modulino-led-matrix.GND#14
+    to: modulino-buzzer.GND#12
+    net: gnd
+    cable: cable-mto5paz2i858
+  - id: modulino-led-matrix.3V3#15__modulino-buzzer.3V3#13
+    from: modulino-led-matrix.3V3#15
+    to: modulino-buzzer.3V3#13
+    net: vcc
+    cable: cable-mto5paz2i858
+  - id: modulino-led-matrix.SDA#16__modulino-buzzer.SDA#14
+    from: modulino-led-matrix.SDA#16
+    to: modulino-buzzer.SDA#14
+    net: signal
+    cable: cable-mto5paz2i858
+  - id: modulino-led-matrix.SCL#17__modulino-buzzer.SCL#15
+    from: modulino-led-matrix.SCL#17
+    to: modulino-buzzer.SCL#15
+    net: signal
+    cable: cable-mto5paz2i858
+  - id: modulino-buzzer.GND-B#16__modulino-motors.GND#16
+    from: modulino-buzzer.GND-B#16
+    to: modulino-motors.GND#16
+    net: gnd
+    cable: cable-mto5pm5125k4
+  - id: modulino-buzzer.3V3-B#17__modulino-motors.3V3#17
+    from: modulino-buzzer.3V3-B#17
+    to: modulino-motors.3V3#17
+    net: vcc
+    cable: cable-mto5pm5125k4
+  - id: modulino-buzzer.SDA-B#18__modulino-motors.SDA#18
+    from: modulino-buzzer.SDA-B#18
+    to: modulino-motors.SDA#18
+    net: signal
+    cable: cable-mto5pm5125k4
+  - id: modulino-buzzer.SCL-B#19__modulino-motors.SCL#19
+    from: modulino-buzzer.SCL-B#19
+    to: modulino-motors.SCL#19
+    net: signal
+    cable: cable-mto5pm5125k4
+  - id: modulino-motors.GND-B#20__modulino-distance.GND-B#12
+    from: modulino-motors.GND-B#20
+    to: modulino-distance.GND-B#12
+    net: gnd
+    cable: cable-mto5po17kd9c
+  - id: modulino-motors.3V3-B#21__modulino-distance.3V3-B#13
+    from: modulino-motors.3V3-B#21
+    to: modulino-distance.3V3-B#13
+    net: vcc
+    cable: cable-mto5po17kd9c
+  - id: modulino-motors.SDA-B#22__modulino-distance.SDA-B#14
+    from: modulino-motors.SDA-B#22
+    to: modulino-distance.SDA-B#14
+    net: signal
+    cable: cable-mto5po17kd9c
+  - id: modulino-motors.SCL-B#23__modulino-distance.SCL-B#15
+    from: modulino-motors.SCL-B#23
+    to: modulino-distance.SCL-B#15
+    net: signal
+    cable: cable-mto5po17kd9c
+  - id: modulino-distance.GND#8__modulino-movement.GND#14
+    from: modulino-distance.GND#8
+    to: modulino-movement.GND#14
+    net: gnd
+    cable: cable-mto5pq0r07j7
+  - id: modulino-distance.3V3#9__modulino-movement.3V3#15
+    from: modulino-distance.3V3#9
+    to: modulino-movement.3V3#15
+    net: vcc
+    cable: cable-mto5pq0r07j7
+  - id: modulino-distance.SDA#10__modulino-movement.SDA#16
+    from: modulino-distance.SDA#10
+    to: modulino-movement.SDA#16
+    net: signal
+    cable: cable-mto5pq0r07j7
+  - id: modulino-distance.SCL#11__modulino-movement.SCL#17
+    from: modulino-distance.SCL#11
+    to: modulino-movement.SCL#17
+    net: signal
+    cable: cable-mto5pq0r07j7
+  - id: board.GND-QT#28__modulino-led-matrix.GND#10
+    from: board.GND-QT#28
+    to: modulino-led-matrix.GND#10
+    net: gnd
+    cable: cable-mtq69k9z9aa0
+  - id: board.3V3-QT#29__modulino-led-matrix.3V3#11
+    from: board.3V3-QT#29
+    to: modulino-led-matrix.3V3#11
+    net: vcc
+    cable: cable-mtq69k9z9aa0
+  - id: board.SDA-QT#30__modulino-led-matrix.SDA#12
+    from: board.SDA-QT#30
+    to: modulino-led-matrix.SDA#12
+    net: signal
+    cable: cable-mtq69k9z9aa0
+  - id: board.SCL-QT#31__modulino-led-matrix.SCL#13
+    from: board.SCL-QT#31
+    to: modulino-led-matrix.SCL#13
+    net: signal
+    cable: cable-mtq69k9z9aa0
+  - id: board.BAT-#33__battery-lipo-1s.GND#1
+    from: board.BAT-#33
+    to: battery-lipo-1s.GND#1
+    net: gnd
+  - id: board.BAT+#32__battery-lipo-1s.V+#0
+    from: board.BAT+#32
+    to: battery-lipo-1s.V+#0
+    net: vcc

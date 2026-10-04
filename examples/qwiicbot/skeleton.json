@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "urdf_hash": "fnv1a-ae40aa18",
+  "robot": "my_robot",
+  "joints": [
+    {
+      "name": "Modulino_LED_Matrix_joint",
+      "type": "fixed",
+      "parent": "base_link",
+      "child": "Modulino_LED_Matrix",
+      "origin_xyz": [
+        0.08,
+        0,
+        0
+      ],
+      "origin_rpy": [
+        0,
+        0,
+        0
+      ],
+      "bone_length_mm": 80
+    },
+    {
+      "name": "Modulino_Buzzer_joint",
+      "type": "fixed",
+      "parent": "base_link",
+      "child": "Modulino_Buzzer",
+      "origin_xyz": [
+        0.16,
+        0,
+        0
+      ],
+      "origin_rpy": [
+        0,
+        0,
+        0
+      ],
+      "bone_length_mm": 160
+    },
+    {
+      "name": "Modulino_Distance_joint",
+      "type": "fixed",
+      "parent": "base_link",
+      "child": "Modulino_Distance",
+      "origin_xyz": [
+        0.24,
+        0,
+        0
+      ],
+      "origin_rpy": [
+        0,
+        0,
+        0
+      ],
+      "bone_length_mm": 240
+    },
+    {
+      "name": "Modulino_Motors_joint",
+      "type": "fixed",
+      "parent": "base_link",
+      "child": "Modulino_Motors",
+      "origin_xyz": [
+        0.32,
+        0,
+        0
+      ],
+      "origin_rpy": [
+        0,
+        0,
+        0
+      ],
+      "bone_length_mm": 320
+    },
+    {
+      "name": "Modulino_Movement_joint",
+      "type": "fixed",
+      "parent": "base_link",
+      "child": "Modulino_Movement",
+      "origin_xyz": [
+        0.4,
+        0,
+        0
+      ],
+      "origin_rpy": [
+        0,
+        0,
+        0
+      ],
+      "bone_length_mm": 400
+    },
+    {
+      "name": "Cytron_Maker_Pi_RP2040_joint",
+      "type": "fixed",
+      "parent": "base_link",
+      "child": "Cytron_Maker_Pi_RP2040",
+      "origin_xyz": [
+        0.018,
+        -0.057,
+        0
+      ],
+      "origin_rpy": [
+        0,
+        0,
+        0
+      ],
+      "bone_length_mm": 59.77
+    },
+    {
+      "name": "LiPo_1S_3_7_V_joint",
+      "type": "fixed",
+      "parent": "base_link",
+      "child": "LiPo_1S_3_7_V",
+      "origin_xyz": [
+        0.56,
+        0,
+        0
+      ],
+      "origin_rpy": [
+        0,
+        0,
+        0
+      ],
+      "bone_length_mm": 560
+    }
+  ],
+  "links": {
+    "base_link": {},
+    "Modulino_LED_Matrix": {},
+    "Modulino_Buzzer": {},
+    "Modulino_Distance": {},
+    "Modulino_Motors": {},
+    "Modulino_Movement": {},
+    "Cytron_Maker_Pi_RP2040": {},
+    "LiPo_1S_3_7_V": {}
+  }
+}

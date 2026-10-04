@@ -33,7 +33,7 @@ except ImportError:
 BOARDS = {
     # STEMMA QT is on its own regulator behind GPIO 2. SCL is GPIO 20, which
     # MicroPython's hardware I2C does not accept on this chip -- hence SoftI2C.
-    "feather_esp32_v2": (2, 22, 20, True),
+    "feather_esp32_v2": (2, 21, 20, True),
     # Most generic ESP32 boards: no power gate, conventional pins.
     "generic_esp32": (None, 21, 22, True),
     # Pico / Pico 2 W with a Qwiic breakout on I2C0.
@@ -111,7 +111,6 @@ MODULINO_ADDRESSES = {
     0x70: "Vibro",
     0x04: "Latch Relay",
 }
-
 
 def scan(bus, verbose=True):
     """Scan the bus and name any Modulinos found.

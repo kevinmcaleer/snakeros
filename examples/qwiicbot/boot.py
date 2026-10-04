@@ -48,3 +48,6 @@ try:
     print("idf heap:", esp32.idf_heap_info(esp32.HEAP_DATA)[-1])
 except ImportError:
     pass
+
+from machine import Pin
+i2c_power = Pin(2, Pin.OUT).value(1)

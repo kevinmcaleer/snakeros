@@ -30,6 +30,7 @@ What is left: drive it with ``/cmd_vel``, read the distance sensor on
 import gc
 import sys
 import time
+from machine import SoftI2C, Pin
 
 # Collect aggressively rather than letting the heap grow. On ESP32 heap growth
 # is permanent -- it never gives blocks back to the IDF heap -- so keeping it
@@ -52,6 +53,7 @@ STOP_DISTANCE = 0.15
 MAX_SPEED = 0.6
 WHEEL_SEPARATION = 0.09
 
+i2c_bus = SoftI2C(scl=Pin(22), sda=Pin(21))
 
 def _report_version():
     """Print the SnakeROS version, tolerating an older install.
@@ -146,6 +148,7 @@ def main(agent="127.0.0.1", port=8888, mtu=256, board=None):
         drive.stop()
         node.destroy()
 
+main(agent="192.168.1.149", board="feather_esp32_v2")
 
-if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else "127.0.0.1")
+# if __name__ == "__main__":
+#     main(sys.argv[1] if len(sys.argv) > 1 else "127.0.0.1")
